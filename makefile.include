@@ -13,7 +13,7 @@ docker-image:
 endif
 
 docker-clean-build:
-	-rm -f docker/*.qcow2* docker/*.tgz* docker/*.vmdk* docker/*.iso
+	-rm -f docker/*.qcow2* docker/*.tgz* docker/*.vmdk* docker/*.iso docker/*.xml
 
 docker-pre-build: ;
 
