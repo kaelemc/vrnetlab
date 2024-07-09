@@ -39,7 +39,7 @@ logging.Logger.trace = trace
 
 
 class cat9kv_vm(vrnetlab.VM):
-    def __init__(self, hostname, username, password, conn_mode,  vcpu, ram, install_mode=False):
+    def __init__(self, hostname, username, password, conn_mode,  vcpu, ram):
         disk_image = None
         for e in sorted(os.listdir("/")):
             if not disk_image and re.search(".qcow2$", e):
@@ -53,7 +53,6 @@ class cat9kv_vm(vrnetlab.VM):
             self.license = True
 
         super().__init__(username, password, disk_image=disk_image, smp=f"cores={vcpu},threads=1,sockets=1",ram=ram, min_dp_nics=8)
-        self.install_mode = install_mode
         self.hostname = hostname
         self.conn_mode = conn_mode
         self.num_nics = 9
@@ -67,10 +66,9 @@ class cat9kv_vm(vrnetlab.VM):
                 f"-boot order=cd -cdrom /{self.image_name}",
             ]
         )
-
-        if self.install_mode:
-            logger.trace("install mode")
-            self.create_boot_image()
+        
+        # create .img which is mounted for startup config and contains ASIC emulation in 'conf/vswitch.xml' dir.
+        self.create_boot_image()
 
     def create_boot_image(self):
         """Creates a iso image with a bootstrap configuration"""
@@ -80,7 +78,7 @@ class cat9kv_vm(vrnetlab.VM):
             self.logger.error("Unable to make '/img_dir'. Does the directory already exist?")
 
         with open("/img_dir/iosxe_config.txt", "w") as cfg_file:
-            cfg_file.write("hostname my_hostname\r\n")
+            cfg_file.write("hostname cat9kv\r\n")
             cfg_file.write("end\r\n")
 
         genisoimage_args = [
@@ -91,6 +89,7 @@ class cat9kv_vm(vrnetlab.VM):
             "/img_dir",
         ]
 
+        self.logger.debug("Generating boot ISO")
         subprocess.Popen(genisoimage_args)
 
     def bootstrap_spin(self):
@@ -103,36 +102,28 @@ class cat9kv_vm(vrnetlab.VM):
             return
 
         (ridx, match, res) = self.tn.expect(
-            [b"Press RETURN to get started!", b"IOSXEBOOT-4-FACTORY_RESET", b"Autoinstall.*"], 1
+            [b"Press RETURN to get started!", b"IOSXEBOOT-4-FACTORY_RESET",], 1
         )
         if match:  # got a match!
             if ridx == 0:  # login
                 self.logger.debug("matched, Press RETURN to get started.")
-                if self.install_mode:
-                    self.logger.debug("Now we wait for the device to reload")
-                else:
-                    self.wait_write("", wait=None)
+   
+                self.wait_write("", wait=None)
 
-                    # run main config!
-                    self.bootstrap_config()
-                    # add startup config if present
-                    self.startup_config()
-                    # close telnet connection
-                    self.tn.close()
-                    # startup time?
-                    startup_time = datetime.datetime.now() - self.start_time
-                    self.logger.info("Startup complete in: %s", startup_time)
-                    # mark as running
-                    self.running = True
-                    return
-            elif ridx == 1 or ridx == 2:  # IOSXEBOOT-4-FACTORY_RESET or regex match for 'Autoinstall'
-                if self.install_mode:
-                    install_time = datetime.datetime.now() - self.start_time
-                    self.logger.info("Install complete in: %s", install_time)
-                    self.running = True
-                    return
-                else:
-                    self.logger.warning("Unexpected reload while running")
+                # run main config!
+                self.bootstrap_config()
+                # add startup config if present
+                self.startup_config()
+                # close telnet connection
+                self.tn.close()
+                # startup time?
+                startup_time = datetime.datetime.now() - self.start_time
+                self.logger.info("Startup complete in: %s", startup_time)
+                # mark as running
+                self.running = True
+                return
+            elif ridx == 1:  # IOSXEBOOT-4-FACTORY_RESET
+                self.logger.warning("Unexpected reload while running")
 
         # no match, if we saw some output from the router it's probably
         # booting, so let's give it some more time
@@ -162,11 +153,14 @@ class cat9kv_vm(vrnetlab.VM):
         else:
             self.wait_write("ip domain-name example.com")
         self.wait_write("crypto key generate rsa modulus 2048")
+        
+        self.wait_write("no ip domain lookup")
 
-        # self.wait_write("interface GigabitEthernet1")
-        # self.wait_write("ip address 10.0.0.15 255.255.255.0")
-        # self.wait_write("no shut")
-        # self.wait_write("exit")
+        self.wait_write("interface GigabitEthernet0/0")
+        self.wait_write("ip address 10.0.0.15 255.255.255.0")
+        self.wait_write("no shut")
+        self.wait_write("exit")
+        
         self.wait_write("restconf")
         self.wait_write("netconf-yang")
         self.wait_write("netconf max-sessions 16")
@@ -212,29 +206,6 @@ class cat9kv(vrnetlab.VR):
         super(cat9kv, self).__init__(username, password)
         self.vms = [cat9kv_vm(hostname, username, password, conn_mode, vcpu, ram)]
 
-
-class cat9kv_installer(cat9kv):
-    """cat9kv installer
-
-    Will start the cat9kv with a mounted iso to make sure that we get
-    console output on serial, not vga.
-    """
-
-    def __init__(self, hostname, username, password, conn_mode, vcpu, ram):
-        super(cat9kv_installer, self).__init__(hostname, username, password, conn_mode, vcpu, ram)
-        self.vms = [
-            cat9kv_vm(hostname, username, password, conn_mode, vcpu, ram, install_mode=True)
-        ]
-
-    def install(self):
-        self.logger.info("Installing cat9kv")
-        cat9kv = self.vms[0]
-        while not cat9kv.running:
-            cat9kv.work()
-        cat9kv.stop()
-        self.logger.info("Installation complete")
-
-
 if __name__ == "__main__":
     import argparse
 
@@ -244,7 +215,6 @@ if __name__ == "__main__":
     )
     parser.add_argument("--username", default="vrnetlab", help="Username")
     parser.add_argument("--password", default="VR-netlab9", help="Password")
-    parser.add_argument("--install", action="store_true", help="Install cat9kv")
     parser.add_argument("--hostname", default="cat9kv", help="Router hostname")
     parser.add_argument(
         "--connection-mode",
@@ -268,11 +238,5 @@ if __name__ == "__main__":
     if args.trace:
         logger.setLevel(1)
 
-    if args.install:
-        vr = cat9kv_installer(
-            args.hostname, args.username, args.password, args.connection_mode, args.vcpu, args.ram
-        )
-        vr.install()
-    else:
-        vr = cat9kv(args.hostname, args.username, args.password, args.connection_mode, args.vcpu, args.ram)
-        vr.start()
+    vr = cat9kv(args.hostname, args.username, args.password, args.connection_mode, args.vcpu, args.ram)
+    vr.start()
