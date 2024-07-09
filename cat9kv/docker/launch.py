@@ -28,6 +28,7 @@ signal.signal(signal.SIGCHLD, handle_SIGCHLD)
 TRACE_LEVEL_NUM = 9
 logging.addLevelName(TRACE_LEVEL_NUM, "TRACE")
 
+
 def trace(self, message, *args, **kws):
     # Yes, logger takes its '*args' as 'args'.
     if self.isEnabledFor(TRACE_LEVEL_NUM):
@@ -38,7 +39,7 @@ logging.Logger.trace = trace
 
 
 class cat9kv_vm(vrnetlab.VM):
-    def __init__(self, hostname, username, password, conn_mode,  vcpu, ram):
+    def __init__(self, hostname, username, password, conn_mode, vcpu, ram):
         disk_image = None
         for e in sorted(os.listdir("/")):
             if not disk_image and re.search(".qcow2$", e):
@@ -51,21 +52,28 @@ class cat9kv_vm(vrnetlab.VM):
             logger.info("License found")
             self.license = True
 
-        super().__init__(username, password, disk_image=disk_image, smp=f"cores={vcpu},threads=1,sockets=1",ram=ram, min_dp_nics=8)
+        super().__init__(
+            username,
+            password,
+            disk_image=disk_image,
+            smp=f"cores={vcpu},threads=1,sockets=1",
+            ram=ram,
+            min_dp_nics=8,
+        )
         self.hostname = hostname
         self.conn_mode = conn_mode
         self.num_nics = 9
         self.nic_type = "virtio-net-pci"
-        
+
         self.image_name = "config.img"
-        
+
         self.qemu_args.extend(
             [
-                "-overcommit mem-lock=off", 
+                "-overcommit mem-lock=off",
                 f"-boot order=cd -cdrom /{self.image_name}",
             ]
         )
-        
+
         # create .img which is mounted for startup config and contains ASIC emulation in 'conf/vswitch.xml' dir.
         self.create_boot_image()
 
@@ -74,8 +82,10 @@ class cat9kv_vm(vrnetlab.VM):
         try:
             os.makedirs("/img_dir/conf")
         except:
-            self.logger.error("Unable to make '/img_dir'. Does the directory already exist?")
-        
+            self.logger.error(
+                "Unable to make '/img_dir'. Does the directory already exist?"
+            )
+
         try:
             os.popen("cp /vswitch.xml /img_dir/conf/")
         except:
@@ -106,12 +116,16 @@ class cat9kv_vm(vrnetlab.VM):
             return
 
         (ridx, match, res) = self.tn.expect(
-            [b"Press RETURN to get started!", b"IOSXEBOOT-4-FACTORY_RESET",], 1
+            [
+                b"Press RETURN to get started!",
+                b"IOSXEBOOT-4-FACTORY_RESET",
+            ],
+            1,
         )
         if match:  # got a match!
             if ridx == 0:  # login
                 self.logger.debug("matched, Press RETURN to get started.")
-   
+
                 self.wait_write("", wait=None)
 
                 # run main config!
@@ -157,14 +171,14 @@ class cat9kv_vm(vrnetlab.VM):
         else:
             self.wait_write("ip domain-name example.com")
         self.wait_write("crypto key generate rsa modulus 2048")
-        
+
         self.wait_write("no ip domain lookup")
 
         self.wait_write("interface GigabitEthernet0/0")
         self.wait_write("ip address 10.0.0.15 255.255.255.0")
         self.wait_write("no shut")
         self.wait_write("exit")
-        
+
         self.wait_write("restconf")
         self.wait_write("netconf-yang")
         self.wait_write("netconf max-sessions 16")
@@ -210,6 +224,7 @@ class cat9kv(vrnetlab.VR):
         super(cat9kv, self).__init__(username, password)
         self.vms = [cat9kv_vm(hostname, username, password, conn_mode, vcpu, ram)]
 
+
 if __name__ == "__main__":
     import argparse
 
@@ -225,13 +240,9 @@ if __name__ == "__main__":
         default="vrxcon",
         help="Connection mode to use in the datapath",
     )
-    parser.add_argument(
-        "--vcpu", type=int, default=4, help="Allocated vCPUs"
-    )
-    parser.add_argument(
-        "--ram", type=int, default=18432, help="Allocaetd RAM in MB"
-    )
-    
+    parser.add_argument("--vcpu", type=int, default=4, help="Allocated vCPUs")
+    parser.add_argument("--ram", type=int, default=18432, help="Allocaetd RAM in MB")
+
     args = parser.parse_args()
 
     LOG_FORMAT = "%(asctime)s: %(module)-10s %(levelname)-8s %(message)s"
@@ -242,5 +253,12 @@ if __name__ == "__main__":
     if args.trace:
         logger.setLevel(1)
 
-    vr = cat9kv(args.hostname, args.username, args.password, args.connection_mode, args.vcpu, args.ram)
+    vr = cat9kv(
+        args.hostname,
+        args.username,
+        args.password,
+        args.connection_mode,
+        args.vcpu,
+        args.ram,
+    )
     vr.start()
