@@ -72,7 +72,7 @@ class cat9kv_vm(vrnetlab.VM):
     def create_boot_image(self):
         """Creates a iso image with a bootstrap configuration"""
         try:
-            os.mkdir("/img_dir")
+            os.makedirs("/img_dir/conf")
         except:
             self.logger.error("Unable to make '/img_dir'. Does the directory already exist?")
         
