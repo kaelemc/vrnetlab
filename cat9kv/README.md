@@ -24,6 +24,7 @@ To configure the Q200 image or enable a higher throughput dataplane for UADP; yo
 > You can obtain a `vswitch.xml` file from the relevant CML node definiton file.
 
 Known working versions:
+
 - cat9kv-prd-17.12.01prd9.qcow2 (UADP & Q200)
 
 ## Usage
@@ -36,18 +37,19 @@ name: mylab
 topology:
   nodes:
     cat9kv:
-      kind: cisco_cat9kv 
+      kind: cisco_cat9kv
       image: vrnetlab/vr-cat9kv:<tag>
 ```
 
-You can also supply a vswitch.xml file using `binds`. Below is an example topology file. 
+You can also supply a vswitch.xml file using `binds`. Below is an example topology file.
+
 ```yaml
 # topology.clab.yaml
 name: mylab
 topology:
   nodes:
     cat9kv:
-      kind: cisco_cat9kv 
+      kind: cisco_cat9kv
       image: vrnetlab/vr-cat9kv:<tag>
       binds:
         - /path/to/vswitch.xml:/vswitch.xml
@@ -77,8 +79,8 @@ name: my-example-lab
 topology:
   nodes:
     my-cat9kv:
-      kind: cisco_cat9kv 
-      image: vrnetlab/vr-cat9kv:17.12.01p-q200
+      kind: cisco_cat9kv
+      image: vrnetlab/vr-cat9kv:17.12.01
     env:
         VCPU: 6
         RAM: 12288
