@@ -7,7 +7,6 @@ import re
 import signal
 import subprocess
 import sys
-from pathlib import Path
 
 import vrnetlab
 
@@ -76,9 +75,14 @@ class cat9kv_vm(vrnetlab.VM):
             os.mkdir("/img_dir")
         except:
             self.logger.error("Unable to make '/img_dir'. Does the directory already exist?")
+        
+        try:
+            os.popen("cp /vswitch.xml /img_dir/conf/")
+        except:
+            self.logger.debug("No vswitch.xml file provided.")
 
         with open("/img_dir/iosxe_config.txt", "w") as cfg_file:
-            cfg_file.write("hostname cat9kv\r\n")
+            cfg_file.write(f"hostname {self.hostname}\r\n")
             cfg_file.write("end\r\n")
 
         genisoimage_args = [
@@ -144,7 +148,7 @@ class cat9kv_vm(vrnetlab.VM):
         self.wait_write("enable", wait=">")
         self.wait_write("configure terminal", wait=">")
 
-        # self.wait_write(f"hostname {self.hostname}")
+        self.wait_write(f"hostname {self.hostname}")
         self.wait_write(
             "username %s privilege 15 password %s" % (self.username, self.password)
         )
