@@ -511,22 +511,32 @@ class VM:
 
     # if insuffucient amount of nics are defined in the topology file, generate dummmy nics so cat9kv can boot.
     def gen_dummy_nics(self):
-        # calcualte required num of nics to generate
+        # calculate required num of nics to generate
         nics = self.min_nics - self.num_provisioned_nics
         
         self.logger.debug(f"Insuffucient NICs defined. Generating {nics} dummy nics")
 
         res=[]
+        
+        pci_bus_ctr = self.num_provisioned_nics
 
         for i in range(0, nics):
-            # self.logger.debug(i)
-            # dummy interface
+            # dummy interface naming
+            interface_name = f"dummy{str(i+self.num_provisioned_nics)}"
+            
+            # PCI bus counter is to ensure pci bus index starts from 1
+            # and continuing in sequence regardles the eth index
+            pci_bus_ctr += 1
+
+            pci_bus = math.floor(pci_bus_ctr / self.nics_per_pci_bus) + 1
+            addr = (pci_bus_ctr % self.nics_per_pci_bus) + 1
+            
             res.extend(
                 [
                     "-device",
-                    f"{self.nic_type},netdev=dummy{str(i)},id=dummy{str(i)},mac={gen_mac(0)}",
+                    f"{self.nic_type},netdev={interface_name},id={interface_name},mac={gen_mac(i)},bus=pci.{pci_bus},addr=0x{addr}",
                     "-netdev",
-                    f"tap,ifname=dummy{str(i)},id=dummy{str(i)},script=no,downscript=no",
+                    f"tap,ifname={interface_name},id={interface_name},script=no,downscript=no",
                 ]
             )
         return res
