@@ -23,13 +23,6 @@ To configure the Q200 image or enable a higher throughput dataplane for UADP; yo
 
 > You can obtain a `vswitch.xml` file from the relevant CML node definiton file.
 
-You can then perform the same process, you can supply the `asic` argument to tag the image with the relevant image. By default the image is tagged as UADP.
-
-```sh
-# This doesn't change the ASIC type, it only tags the image
-make docker-image asic=q200
-```
-
 Known working versions:
 - cat9kv-prd-17.12.01prd9.qcow2 (UADP & Q200)
 
@@ -46,6 +39,20 @@ topology:
       kind: cisco_cat9kv 
       image: vrnetlab/vr-cat9kv:<tag>
 ```
+
+You can also supply a vswitch.xml file using `binds`. Below is an example topology file. 
+```yaml
+# topology.clab.yaml
+name: mylab
+topology:
+  nodes:
+    cat9kv:
+      kind: cisco_cat9kv 
+      image: vrnetlab/vr-cat9kv:<tag>
+      binds:
+        - /path/to/vswitch.xml:/vswitch.xml
+```
+
 ### Interface naming
 
 Currently a maximum of 8 data-plane interfaces are supported. 9 interfaces total if including the management interface.
@@ -53,6 +60,8 @@ Currently a maximum of 8 data-plane interfaces are supported. 9 interfaces total
 - `eth0` - Node management interface
 - `eth1` - First dataplane interface (GigabitEthernet1/0/1).
 - `ethX` - Subsequent dataplane interfaces will count onwards from 1. For example, the third dataplane interface will be `eth3`
+
+You can also use interface aliases of `GigabitEthernet1/0/x` or `Gi1/0/x`
 
 ### Environment Variables
 
