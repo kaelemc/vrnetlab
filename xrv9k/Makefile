@@ -17,6 +17,7 @@ VERSION=$(shell echo $(IMAGE) | sed -e 's/.\+[^0-9]\([0-9]\+\.[0-9]\+\.[0-9]\+\(
 ifeq ($(INSTALL),false)
 $(info Install mode disabled)
 else
+$(info Install mode enabled)
 -include ../makefile-install.include
 endif
 
