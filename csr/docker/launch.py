@@ -164,7 +164,7 @@ class CSR_vm(vrnetlab.VM):
         self.wait_write("exit")
         self.wait_write("description Containerlab management VRF (DO NOT DELETE)")
         self.wait_write("exit")
-        
+
         self.wait_write("ip route vrf clab-mgmt 0.0.0.0 0.0.0.0 10.0.0.2")
 
         self.wait_write("interface GigabitEthernet1")

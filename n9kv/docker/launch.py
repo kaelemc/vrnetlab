@@ -142,7 +142,7 @@ class N9KV_vm(vrnetlab.VM):
         # configure management vrf
         self.wait_write("vrf context management")
         self.wait_write("ip route 0.0.0.0/0 10.0.0.2")
-        self.wait_write("exit")     
+        self.wait_write("exit")
 
         # configure mgmt interface
         self.wait_write("interface mgmt0")

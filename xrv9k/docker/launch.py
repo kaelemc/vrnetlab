@@ -82,10 +82,10 @@ class XRV_vm(vrnetlab.VM):
                 "-netdev",
                 "user,id=mgmt,net=10.0.0.0/24,"
                 "tftp=/tftpboot,"
-				"hostfwd=tcp:0.0.0.0:22-10.0.0.15:22,"
-            	"hostfwd=udp:0.0.0.0:161-10.0.0.15:161," 
-            	"hostfwd=tcp:0.0.0.0:830-10.0.0.15:830," 
-            	"hostfwd=tcp:0.0.0.0:57400-10.0.0.15:57400,"
+                "hostfwd=tcp:0.0.0.0:22-10.0.0.15:22,"
+                "hostfwd=udp:0.0.0.0:161-10.0.0.15:161,"
+                "hostfwd=tcp:0.0.0.0:830-10.0.0.15:830,"
+                "hostfwd=tcp:0.0.0.0:57400-10.0.0.15:57400"
             ]
         )
         # dummy interface for xrv9k ctrl interface

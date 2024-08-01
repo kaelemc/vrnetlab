@@ -173,7 +173,7 @@ class cat9kv_vm(vrnetlab.VM):
         self.wait_write("crypto key generate rsa modulus 2048")
 
         self.wait_write("no ip domain lookup")
-        
+
         # add mgmt vrf static route
         self.wait_write("ip route vrf Mgmt-vrf 0.0.0.0 0.0.0.0 10.0.0.2")
 
