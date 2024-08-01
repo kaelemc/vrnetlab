@@ -264,6 +264,7 @@ class XRV_vm(vrnetlab.VM):
         self.wait_write("netconf-yang agent ssh")  # for 5.3.3
         # configure gNMI
         self.wait_write("grpc port 57400")
+        self.wait_write("grpc vrf clab-mgmt")
         self.wait_write("grpc no-tls")
 
         # configure xml agent
