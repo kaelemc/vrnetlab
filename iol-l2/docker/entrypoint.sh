@@ -11,9 +11,6 @@ update_configs() {
     sed -i "s/<hostname>/$HOSTNAME/g" /opt/iol/config.txt
     sed -i "s/<ip_address>/$eth0_ip/g" /opt/iol/config.txt
     sed -i "s/<ip_gateway>/$gateway_ip/g" /opt/iol/config.txt
-
-    # Update the iourc file with the new hostname
-    sed -i "s/^iol = /$HOSTNAME = /" /opt/iol/.iourc
 }
 
 # Function to flush eth0 IP address
