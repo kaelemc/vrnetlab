@@ -4,6 +4,8 @@ no aaa new-model
 !
 ip cef
 !
+ipv6 unicast-routing
+!
 no ip domain lookup
 !
 username admin privilege 15 password admin
@@ -11,10 +13,13 @@ username admin privilege 15 password admin
 vrf definition clab-mgmt
  address-family ipv4
  !
+ address-family ipv6
+ !
 !
 interface Ethernet0/0
  vrf forwarding clab-mgmt
  ip address <ip_address> 255.255.255.0
+ ipv6 address <ipv6_address>/64
  <eth0_mac>
  no shutdown
 !
@@ -23,7 +28,8 @@ interface Ethernet0/0
 ip forward-protocol nd
 !
 ip route vrf clab-mgmt 0.0.0.0 0.0.0.0 Ethernet0/0 <ip_gateway>
-ip domain name lan
+ip route vrf clab-mgmt ::/0 Ethernet0/0 <ipv6_gateway>
+!
 ip ssh version 2
 crypto key generate rsa modulus 2048
 !
