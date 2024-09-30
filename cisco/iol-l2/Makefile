@@ -8,5 +8,5 @@ NOT_VM_IMAGE=1
 # cisco_iol-17.12.01.bin
 VERSION=$(shell echo $(IMAGE) | sed -e 's/cisco_iol-\(.*\)\.bin/\1/')
 
--include ../makefile-sanity.include
--include ../makefile.include
+-include ../../makefile-sanity.include
+-include ../../makefile.include
