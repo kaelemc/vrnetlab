@@ -2,13 +2,15 @@ hostname <hostname>
 !
 no aaa new-model
 !
+ip domain name lab
+!
 ip cef
 !
 ipv6 unicast-routing
 !
 no ip domain lookup
 !
-username admin privilege 15 password admin
+username admin privilege 15 secret admin
 !
 vrf definition clab-mgmt
  address-family ipv4
