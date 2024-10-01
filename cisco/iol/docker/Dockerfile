@@ -29,6 +29,9 @@ COPY config.txt /opt/iol/config.txt
 # Copy the supervisor file
 COPY supervisord.conf /etc/supervisord.conf
 
+# Copy the iourc file.
+COPY .iour[c] /opt/iol/.iourc
+
 # Copy the start-iol.sh script
 COPY start-iol.sh /opt/iol/start-iol.sh
 
