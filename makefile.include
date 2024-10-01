@@ -33,7 +33,7 @@ endif
 	@[ -f ./vswitch.xml ] && cp vswitch.xml docker/ || true
 	@[ -f ./.iourc ] && cp .iourc docker/ || true
 	$(MAKE) IMAGE=$$IMAGE docker-build-image-copy
-	(cd docker; docker build --no-cache --build-arg http_proxy=$(http_proxy) --build-arg HTTP_PROXY=$(HTTP_PROXY) --build-arg https_proxy=$(https_proxy) --build-arg HTTPS_PROXY=$(HTTPS_PROXY) --build-arg IMAGE=$(IMAGE) --build-arg VERSION=$(VERSION) --label "vrnetlab-version=$(VRNETLAB_VERION)" -t $(REGISTRY)vr-$(VR_NAME):$(VERSION) .)
+	(cd docker; docker build --build-arg http_proxy=$(http_proxy) --build-arg HTTP_PROXY=$(HTTP_PROXY) --build-arg https_proxy=$(https_proxy) --build-arg HTTPS_PROXY=$(HTTPS_PROXY) --build-arg IMAGE=$(IMAGE) --build-arg VERSION=$(VERSION) --label "vrnetlab-version=$(VRNETLAB_VERION)" -t $(REGISTRY)vr-$(VR_NAME):$(VERSION) .)
 
 docker-build: docker-build-common
 
