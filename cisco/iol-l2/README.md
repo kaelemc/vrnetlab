@@ -19,7 +19,7 @@ Copy the `x86_64_crb_linux-adventerprisek9-ms` and rename it to `cisco_iol-x.y.z
 
 ### License (.iourc)
 
-Unlike the older IOU (IOS on Unix) a `.iourc` license file may not be required, however you still can provide one if neccesary.
+Unlike the older IOU (IOS on Unix) a `.iourc` license file may not be required, however you still can provide one if necessary.
 
 The `.iourc` license file can be placed next to the IOL binary (in this directory).
 
@@ -27,20 +27,22 @@ When supplying a `.iourc` license file, the hostname field must be changed to `i
 
 **BEFORE**
 
-```
+```ini
 [license]
 hostname = a1b2c3d4e5f6g7
 ```
 
 **AFTER**
-```
+
+```ini
 [license]
 iol = a1b2c3d4e5f6g7
 ```
 
 ### Build command
 
-Execute 
+Execute
+
 ```
 make docker-image
 ```
@@ -55,7 +57,7 @@ vrnetlab/vr-iol-l2              17.12.01    0e5ee8ee8746   9 minutes ago       6
 
 ## Usage
 
-You can define the image easily and use it in a topolgy.
+You can define the image easily and use it in a topology.
 
 ```yaml
 # topology.clab.yaml
