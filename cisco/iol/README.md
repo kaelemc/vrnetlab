@@ -17,12 +17,41 @@ Copy the `x86_64_crb_linux-adventerprisek9-ms` and rename it to `cisco_iol-x.y.z
 
 > If you are getting the image from the CML refplat, the IOL image is under the `iol-xe-x.y.z` directory.
 
+### License (.iourc)
+
+Unlike the older IOU (IOS on Unix) a `.iourc` license file may not be required, however you still can provide one if neccesary.
+
+The `.iourc` license file can be placed next to the IOL binary (in this directory).
+
+When supplying a `.iourc` license file, the hostname field must be changed to `iol`
+
+**BEFORE**
+
+```
+[license]
+hostname = a1b2c3d4e5f6g7
+```
+
+**AFTER**
+```
+[license]
+iol = a1b2c3d4e5f6g7
+```
+
+### Build command
+
 Execute 
 ```
 make docker-image
 ```
 
 and the image will be built and tagged. You can view the image by executing `docker images`.
+
+```
+containerlab@containerlab:~$ docker images
+REPOSITORY                      TAG         IMAGE ID       CREATED          SIZE
+vrnetlab/vr-iol                 17.12.01    44dde64d56ad   21 hours ago     741MB
+```
 
 ## Usage
 
