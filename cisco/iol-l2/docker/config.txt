@@ -2,14 +2,30 @@ hostname <hostname>
 !
 no aaa new-model
 !
+ip domain name lab
+!
 ip cef
+!
+ipv6 unicast-routing
 !
 no ip domain lookup
 !
-username admin privilege 15 password admin
+username admin privilege 15 secret admin
+!
+vrf definition clab-mgmt
+ address-family ipv4
+ !
+ address-family ipv6
+ !
+!
+int Vlan 1
+ vrf forwarding clab-mgmt
+ ip address <ip_address> 255.255.255.0
+ ipv6 address <ipv6_address>/64
 !
 interface Ethernet0/0
- ip address <ip_address> 255.255.255.0
+ switchport mode access
+ switchport access vlan1
  <eth0_mac>
  no shutdown
 !
@@ -17,8 +33,9 @@ interface Ethernet0/0
 !
 ip forward-protocol nd
 !
-ip route 0.0.0.0 0.0.0.0 Ethernet0/0 <ip_gateway>
-ip domain name lan
+ip route vrf clab-mgmt 0.0.0.0 0.0.0.0 Vlan1 <ip_gateway>
+ip route vrf clab-mgmt ::/0 Vlan1 <ipv6_gateway>
+!
 ip ssh version 2
 crypto key generate rsa modulus 2048
 !
