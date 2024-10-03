@@ -1,21 +1,12 @@
 #!/bin/bash
 
-# Clear ip addressing on eth0
-flush_eth0_ip() {
-    ip addr flush dev eth0
-    ip -6 addr flush dev eth0
-}
+echo "Launching IOL"
 
-# Function to run the startup script after a delay
-# run_startup_script() {
-#     # Flush eth0 IP address
+# Clear ip addressing on eth0 (it 'belongs' to IOL now)
+ip addr flush dev eth0
+ip -6 addr flush dev eth0
 
-# }
-
-# # Start the function in the background
-# run_startup_script
-
-flush_eth0_ip
+echo "Flushed eth0 addresses"
 
 sleep 5
 
@@ -27,9 +18,4 @@ max_eth=$(ls /sys/class/net | grep eth | grep -o -E '[0-9]+' | sort -n | tail -1
 num_slots=$(( (max_eth + 4) / 4 ))
 
 # Start IOL
-# exec /iol/iol.bin 10 -e $num_slots -s 0 -c config.txt
-exec /iol/iol.bin 1 -e $num_slots -s 0 -d 0 -c config.txt -- -n 1024 -q -m 1024
-
-
-# Start bash interactively
-exec "$@"
+exec /iol/iol.bin 1 -e $num_slots -s 0 -c config.txt -n 1024
