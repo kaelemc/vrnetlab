@@ -13,7 +13,7 @@ There are two types of IOL you can obtain:
 
 Copy the `x86_64_crb_linux-adventerprisek9-ms` into this directory and rename it to `cisco_iol-x.y.z.bin` (x.y.z being the version number). For example `cisco_iol-17.12.01.bin`. The `.bin` extension is important.
 
-> If using IOL-L2 it is reccomended to name your image to identify it as IOL-L2. For example: `cisco_iol-L2-x.y.z.bin`
+> If using IOL-L2 it is recommended to name your image to identify it as IOL-L2. For example: `cisco_iol-L2-x.y.z.bin`
 
 > If you are getting the image from the CML refplat, the IOL image is under the `iol-xe-x.y.z` directory or `ioll2-xe-x.y.z` for IOL-L2.
 
@@ -45,7 +45,7 @@ topology:
   nodes:
     iol:
       kind: cisco_iol
-      image: vrnetlab/vr-iol:<tag>
+      image: vrnetlab/cisco_iol:<tag>
 ```
 
 **IOL-L2**
@@ -57,5 +57,6 @@ topology:
   nodes:
     iol:
       kind: cisco_iol
-      image: vrnetlab/cisco_iol-l2:<tag>
+      image: vrnetlab/cisco_iol:<tag>
+      type: l2
 ```
