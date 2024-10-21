@@ -29,7 +29,7 @@ RUN chmod +x /entrypoint.sh
 WORKDIR /iol
 
 # copy iourc file
-COPY .iour[c] /iol/.iourc
+COPY iour[c] /iol/iourc
 
 # Add the IOL image and config files
 COPY *.bin /iol/iol.bin
