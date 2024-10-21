@@ -16,7 +16,7 @@ exec /usr/bin/iouyap 513 -q &
 # Change iourc hostname. IOURC FORMAT BELOW
 # [license]
 # host = somelicensekeygoeshere;
-sed -i "s/^host = /$HOSTNAME = /" /iol/.iourc
+sed -i "s/^host = /$HOSTNAME = /" /iol/iourc
 
 # Get the highest numbered eth interface
 max_eth=$(ls /sys/class/net | grep eth | grep -o -E '[0-9]+' | sort -n | tail -1)
