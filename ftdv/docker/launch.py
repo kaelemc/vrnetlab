@@ -213,12 +213,12 @@ class FTDV_vm(vrnetlab.VM):
         # call parent function to generate first mgmt interface
         res = super(FTDV_vm, self).gen_mgmt()
 
-        # append FMC management port forwarding
-        res[-1] = res[-1] + ",hostfwd=tcp::28305-10.0.0.15:8305"
-        vrnetlab.run_command(
-            ["socat", "TCP-LISTEN:8305,fork", "TCP:127.0.0.1:28305"],
-            background=True,
-        )
+        # # append FMC management port forwarding
+        # res[-1] = res[-1] + ",hostfwd=tcp::28305-10.0.0.15:8305"
+        # vrnetlab.run_command(
+        #     ["socat", "TCP-LISTEN:8305,fork", "TCP:127.0.0.1:28305"],
+        #     background=True,
+        # )
 
         # add Diagnostic0/0 interface
         res.append("-device")
