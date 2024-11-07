@@ -971,7 +971,7 @@ class SROS_vm(vrnetlab.VM):
     def bootstrap_spin(self):
         """This function should be called periodically to do work."""
 
-        (ridx, match, res) = self.tn.expect([b"Login:", b"^[^ ]+#"], 1)
+        (ridx, match, res) = self.expect([b"Login:", b"^[^ ]+#"], 1)
         if match:  # got a match!
             if ridx == 0:  # matched login prompt, so should login
                 self.logger.debug("matched login prompt")
@@ -989,8 +989,8 @@ class SROS_vm(vrnetlab.VM):
 
         # no match, if we saw some output from the router it's probably
         # booting, so let's give it some more time
-        if res != b"":
-            self.logger.trace("OUTPUT: %s" % res.decode())
+        if res != "":
+            self.print(res)
             # reset spins if we saw some output
             self.spins = 0
 

@@ -10,7 +10,11 @@ RUN apt-get update -qy \
    qemu-kvm \
    qemu-utils \
    telnet \
+   git \
+   python3-pip \
    && rm -rf /var/lib/apt/lists/*
+
+RUN pip install git+https://github.com/carlmontanari/scrapli --break-system-packages
 
 ARG IMAGE
 COPY $IMAGE* /

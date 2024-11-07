@@ -18,7 +18,11 @@ RUN apt-get update -qy \
     inetutils-ping \
     dnsutils \
     telnet \
- && rm -rf /var/lib/apt/lists/*
+    git \
+    python3-pip \
+    && rm -rf /var/lib/apt/lists/*
+ 
+RUN pip install git+https://github.com/carlmontanari/scrapli --break-system-packages
 
 ARG IMAGE
 COPY $IMAGE* /

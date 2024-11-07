@@ -1,4 +1,4 @@
-FROM debian:stretch
+FROM public.ecr.aws/docker/library/debian:bookworm-slim
 MAINTAINER Kristian Larsson <kristian@spritelink.net>
 
 RUN apt-get update -qy \
@@ -11,7 +11,11 @@ RUN apt-get update -qy \
         python3-ipy \
         python3-pexpect \
         ssh \
-    && rm -rf /var/lib/apt/lists/*
+        git \
+        python3-pip \
+        && rm -rf /var/lib/apt/lists/*
+     
+RUN pip install git+https://github.com/carlmontanari/scrapli --break-system-packages
 
 ARG IMAGE
 COPY $IMAGE /

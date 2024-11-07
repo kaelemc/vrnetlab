@@ -12,7 +12,11 @@ RUN apt-get update -qy \
    socat \
    ssh \
    sshpass \
+   git \
+   python3-pip \
    && rm -rf /var/lib/apt/lists/*
+
+RUN pip install git+https://github.com/carlmontanari/scrapli --break-system-packages
 
 ARG IMAGE
 COPY $IMAGE* /

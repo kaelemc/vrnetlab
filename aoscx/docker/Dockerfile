@@ -1,4 +1,4 @@
-FROM debian:bullseye
+FROM public.ecr.aws/docker/library/debian:bookworm-slim
 MAINTAINER Stefano Sasso <stesasso@gmail.com>
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -19,7 +19,11 @@ RUN apt-get update -qy \
     ftp \
     qemu-system-x86=1:5.2+dfsg-11+deb11u2 \
     qemu-utils=1:5.2+dfsg-11+deb11u2 \
- && rm -rf /var/lib/apt/lists/*
+    git \
+    python3-pip \
+    && rm -rf /var/lib/apt/lists/*
+ 
+RUN pip install git+https://github.com/carlmontanari/scrapli
 
 ARG IMAGE
 COPY $IMAGE* /

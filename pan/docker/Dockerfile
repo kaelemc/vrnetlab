@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM public.ecr.aws/docker/library/debian:bookworm-slim
 LABEL maintainer="Kristian Larsson <kristian@spritelink.net>"
 LABEL maintainer="Roman Dodin <dodin.roman@gmail.com>"
 
@@ -20,7 +20,11 @@ RUN apt-get update -qy \
    iptables \
    nftables \
    telnet \
+   git \
+   python3-pip \
    && rm -rf /var/lib/apt/lists/*
+
+RUN pip install git+https://github.com/carlmontanari/scrapli --break-system-packages
 
 ARG IMAGE
 COPY $IMAGE* /
