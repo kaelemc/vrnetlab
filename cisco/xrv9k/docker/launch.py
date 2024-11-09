@@ -40,13 +40,13 @@ def trace(self, message, *args, **kws):
 logging.Logger.trace = trace
 
 
-class XRV_vm(vrnetlab.VM):
+class XRv9k_vm(vrnetlab.VM):
     def __init__(self, hostname, username, password, nics, conn_mode, vcpu, ram, install=False):
         disk_image = None
         for e in sorted(os.listdir("/")):
             if not disk_image and re.search(".qcow2", e):
                 disk_image = "/" + e
-        super(XRV_vm, self).__init__(username, password, disk_image=disk_image, ram=ram, smp=f"cores={vcpu},threads=1,sockets=1")
+        super(XRv9k_vm, self).__init__(username, password, disk_image=disk_image, ram=ram, smp=f"cores={vcpu},threads=1,sockets=1")
         
         self.hostname = hostname
         self.conn_mode = conn_mode
@@ -70,21 +70,6 @@ class XRV_vm(vrnetlab.VM):
             ]
         )
         self.credentials = []
-        
-        # init scrapli
-        xr_scrapli_dev = {
-            "host": "127.0.0.1",
-            "port": 5000 + self.num,
-            "auth_username": self.username,
-            "auth_password": self.password,
-            "auth_strict_key": False,
-            "transport": "telnet",
-            "timeout_socket": 600,
-            "timeout_transport": 600,
-            "timeout_ops": 600,
-        }
-        
-        self.xr_conn = IOSXRDriver(**xr_scrapli_dev)
 
     def gen_mgmt(self):
         """Generate qemu args for the mgmt interface(s)"""
@@ -160,12 +145,10 @@ class XRV_vm(vrnetlab.VM):
                 self.wait_write(self.password, wait="Enter secret again:")
                 self.credentials.insert(0, [self.username, self.password])
                 
-                if not self.bootstrap_config():
-                    # main config failed :/
-                    self.logger.error("Failed to load bootstrap configuration. Restarting XRv9k.")
-                    self.stop()
-                    self.start()
-                    return
+                self.logger.info("Applying configuration")
+                
+                # apply bootstrap and startup configuration
+                self.apply_config()
                 
                 # startup time?
                 startup_time = datetime.datetime.now() - self.start_time
@@ -176,7 +159,7 @@ class XRV_vm(vrnetlab.VM):
 
         # no match, if we saw some output from the router it's probably
         # booting, so let's give it some more time
-        if res != "":
+        if res != b"":
             self.print(res)
             # reset spins if we saw some output
             self.spins = 0
@@ -184,23 +167,25 @@ class XRV_vm(vrnetlab.VM):
         self.spins += 1
 
         return
-
-    def bootstrap_config(self):
+    
+    def apply_config(self):
+        
         self.tn.close()
         
-        self.xr_conn.open()
+        # init scrapli
+        xrv9k_scrapli_dev = {
+            "host": "127.0.0.1",
+            "port": 5000 + self.num,
+            "auth_username": self.username,
+            "auth_password": self.password,
+            "auth_strict_key": False,
+            "transport": "telnet",
+            "timeout_socket": 300,
+            "timeout_transport": 300,
+            "timeout_ops": 90,
+        }
         
-        res = self.xr_conn.send_interactive(
-            [
-                ("crypto key generate rsa", "Do you really want to replace them? [yes/no]:", False),
-                ("yes", "How many bits in the modulus [2048]:", False),
-                ("2048", "", False),
-            ]
-        )
-
-        self.logger.info(res.result)
-        
-        XR_CONFIG = f"""hostname {self.hostname}
+        xrv9k_config = f"""hostname {self.hostname}
 vrf clab-mgmt
 description Containerlab management VRF. DO NOT DELETE.
 address-family ipv4 unicast
@@ -229,47 +214,43 @@ ipv4 address 10.0.0.15/24
 commit
 """
 
-        res = self.xr_conn.send_config(XR_CONFIG, strip_prompt=False)
-                
-        if res.failed:
-            self.xr_conn.close()
-            return False
-        
-        self.startup_config()
+        with IOSXRDriver(**xrv9k_scrapli_dev) as con:
+            con.send_config(xrv9k_config)
 
-        self.xr_conn.close()
-        return True  
-    
-    def startup_config(self):
-        
-        if not os.path.exists(STARTUP_CONFIG_FILE):
-            self.logger.warning(f"User provided startup configuration file is not found")
-            return
-        
-        self.logger.info(f"Startup config file {STARTUP_CONFIG_FILE} found")
-        
-        startup_config = ""
-        
-        # append commit to end of file
-        with open(STARTUP_CONFIG_FILE, "r") as cfg:
-            startup_config = cfg.read()
-        
-        startup_config += "commit"
-        
-        res = self.xr_conn.send_config(startup_config, strip_prompt=False)
-                
-        if res.failed:
-            self.logger.error(f"Failed to load startup configuration.")
-        
-        return
-        
-class XRV(vrnetlab.VR):
+            if not os.path.exists(STARTUP_CONFIG_FILE):
+                self.logger.warning(f"User provided startup configuration is not found.")
+                return
+
+            self.logger.info("Startup configuration file found")
+            
+            # need to append 'commit' to end of startup config file
+            startup_cfg = []
+            
+            with open(STARTUP_CONFIG_FILE, 'r') as cfg:
+                for line in cfg:
+                    # remove trailing \n from each line
+                    startup_cfg.append(line.strip())
+                startup_cfg.append("commit")
+            
+            # send startup config
+            res = con.send_configs(startup_cfg)
+            # print startup config and result
+            for response in res:
+                self.logger.info(f"CONFIG: {response.channel_input}")
+                self.logger.info(f"CONFIG RESULT: {response.result}")
+
+            if res.failed:
+                self.logger.error(f"Failed to load startup configuration.")
+                return
+
+
+class XRv9k(vrnetlab.VR):
     def __init__(self, hostname, username, password, nics, conn_mode, vcpu, ram):
-        super(XRV, self).__init__(username, password)
-        self.vms = [XRV_vm(hostname, username, password, nics, conn_mode, vcpu, ram)]
+        super(XRv9k, self).__init__(username, password)
+        self.vms = [XRv9k_vm(hostname, username, password, nics, conn_mode, vcpu, ram)]
 
 
-class XRV_Installer(XRV):
+class XRv9k_Installer(XRv9k):
     """ XRV installer
         Will start the XRV and then shut it down. Booting the XRV for the
         first time requires the XRV itself to install internal packages
@@ -278,8 +259,8 @@ class XRV_Installer(XRV):
         decrease the normal startup time of the XRV.
     """
     def __init__(self, hostname, username, password, nics, conn_mode, vcpu, ram):
-        super(XRV, self).__init__(username, password)
-        self.vms = [XRV_vm(hostname, username, password, nics, conn_mode, vcpu, ram, install=True)]
+        super(XRv9k, self).__init__(username, password)
+        self.vms = [XRv9k_vm(hostname, username, password, nics, conn_mode, vcpu, ram, install=True)]
     
     def install(self):
         self.logger.info("Installing XRv9k")
@@ -328,7 +309,7 @@ if __name__ == "__main__":
     vrnetlab.boot_delay()
 
     if args.install:
-        vr = XRV_Installer(
+        vr = XRv9k_Installer(
             args.hostname,
             args.username,
             args.password,
@@ -339,7 +320,7 @@ if __name__ == "__main__":
         )
         vr.install()
     else:
-        vr = XRV(
+        vr = XRv9k(
             args.hostname,
             args.username,
             args.password,
