@@ -9,6 +9,7 @@ import subprocess
 import sys
 
 import vrnetlab
+from scrapli.driver.core import IOSXEDriver
 
 STARTUP_CONFIG_FILE = "/config/startup-config.cfg"
 
@@ -115,12 +116,11 @@ class C8000v_vm(vrnetlab.VM):
                 else:
                     self.wait_write("", wait=None)
 
-                    # run main config!
-                    self.bootstrap_config()
-                    # add startup config if present
-                    self.startup_config()
-                    # close telnet connection
-                    self.tn.close()
+                    self.logger.info("Applying configuration")
+                
+                    # apply bootstrap and startup configuration
+                    self.apply_config()
+
                     # startup time?
                     startup_time = datetime.datetime.now() - self.start_time
                     self.logger.info("Startup complete in: %s", startup_time)
@@ -134,11 +134,11 @@ class C8000v_vm(vrnetlab.VM):
                     self.running = True
                     return
                 else:
-                    self.log.debug("Unexpected reload while running")
+                    self.log.error("Unexpected reload while running")
 
         # no match, if we saw some output from the router it's probably
         # booting, so let's give it some more time
-        if res != "":
+        if res != b"":
             self.print(res)
             # reset spins if we saw some output
             self.spins = 0
@@ -146,77 +146,72 @@ class C8000v_vm(vrnetlab.VM):
         self.spins += 1
 
         return
-
-    def bootstrap_config(self):
-        """Do the actual bootstrap config"""
-        self.logger.info("applying bootstrap configuration")
-
-        self.wait_write("", None)
-        self.wait_write("enable", wait=">")
-        self.wait_write("configure terminal", wait=">")
-
-        self.wait_write(f"hostname {self.hostname}")
-        self.wait_write(
-            "username %s privilege 15 password %s" % (self.username, self.password)
-        )
-        if int(self.version.split(".")[0]) >= 16:
-            self.wait_write("ip domain name example.com")
-        else:
-            self.wait_write("ip domain-name example.com")
-        self.wait_write("crypto key generate rsa modulus 2048")
+ 
+    def apply_config(self):
         
-        self.wait_write("vrf definition clab-mgmt")
-        self.wait_write("address-family ipv4")
-        self.wait_write("exit")
-        self.wait_write("description Containerlab management VRF (DO NOT DELETE)")
-        self.wait_write("exit")
+        self.tn.close()
+        
+        # init scrapli
+        cat8k_scrapli_dev = {
+            "host": "127.0.0.1",
+            "port": 5000 + self.num,
+            "auth_bypass": True,
+            "auth_strict_key": False,
+            "transport": "telnet",
+            "timeout_socket": 300,
+            "timeout_transport": 300,
+            "timeout_ops": 90,
+        }
+        
+        cat8k_config = f"""hostname {self.hostname}
+username {self.username} privilege 15 password {self.password}
+ip domain name example.com
+no ip domain lookup
 
-        self.wait_write("ip route vrf clab-mgmt 0.0.0.0 0.0.0.0 10.0.0.2")
+vrf definition clab-mgmt
+description Containerlab management VRF (DO NOT DELETE)
+address-family ipv4
+exit
 
-        self.wait_write("interface GigabitEthernet1")
-        self.wait_write("vrf forwarding clab-mgmt")
-        self.wait_write("ip address 10.0.0.15 255.255.255.0")
-        self.wait_write("no shut")
-        self.wait_write("exit")
-        self.wait_write("restconf")
-        self.wait_write("netconf-yang")
-        self.wait_write("netconf max-sessions 16")
-        # I did not find any documentation about this, but is seems like a good idea!?
-        self.wait_write("netconf detailed-error")
-        self.wait_write("ip ssh server algorithm mac hmac-sha2-512")
-        self.wait_write("ip ssh maxstartups 128")
+ip route vrf clab-mgmt 0.0.0.0 0.0.0.0 10.0.0.2
 
-        self.wait_write("line vty 0 4")
-        self.wait_write("login local")
-        self.wait_write("transport input all")
-        self.wait_write("end")
-        self.wait_write("copy running-config startup-config")
-        self.wait_write("\r", "Destination")
+interface GigabitEthernet 1
+description Containerlab management interface
+vrf forwarding clab-mgmt
+ip address 10.0.0.15 255.255.255.0
+no shut
+exit
 
-    def startup_config(self):
-        """Load additional config provided by user."""
+crypto key generate rsa modulus 2048
 
-        if not os.path.exists(STARTUP_CONFIG_FILE):
-            self.logger.warn(f"User provided startup configuration is not found")
-            return
+ip ssh version 2
+ip ssh server algorithm mac hmac-sha2-512
+ip ssh maxstartups 128
 
-        self.logger.info(f"Startup config file {STARTUP_CONFIG_FILE} exists")
-        with open(STARTUP_CONFIG_FILE) as file:
-            config_lines = file.readlines()
-            config_lines = [line.rstrip() for line in config_lines]
-            self.logger.info(f"Parsed startup config file {STARTUP_CONFIG_FILE}")
+restconf
+netconf-yang
+netconf detailed-error
+netconf max-sessions 16
 
-        self.logger.info(f"Writing lines from {STARTUP_CONFIG_FILE}")
-
-        self.wait_write("configure terminal")
-        # Apply lines from file
-        for line in config_lines:
-            self.wait_write(line)
-        # End and Save
-        self.wait_write("end")
-        self.wait_write("copy running-config startup-config")
-        self.wait_write("\r", "Destination")
-
+line vty 0 4
+login local
+transport input all
+"""
+        
+        with IOSXEDriver(**cat8k_scrapli_dev) as con:
+            con.send_config(cat8k_config)
+            
+            if not os.path.exists(STARTUP_CONFIG_FILE):
+                self.logger.warning(f"User provided startup configuration is not found.")
+                return
+            
+            self.logger.info("Startup configuration file found")
+            # send startup config
+            res = con.send_configs_from_file(STARTUP_CONFIG_FILE)
+            # print startup config and result
+            for response in res:
+                self.logger.info(f"CONFIG: {response.channel_input}")
+                self.logger.info(f"CONFIG RESULT: {response.result}")
 
 class C8000v(vrnetlab.VR):
     def __init__(self, hostname, username, password, conn_mode):
@@ -239,10 +234,10 @@ class C8000v_installer(C8000v):
 
     def install(self):
         self.logger.info("Installing C8000v")
-        csr = self.vms[0]
-        while not csr.running:
-            csr.work()
-        csr.stop()
+        cat8kv = self.vms[0]
+        while not cat8kv.running:
+            cat8kv.work()
+        cat8kv.stop()
         self.logger.info("Installation complete")
 
 
