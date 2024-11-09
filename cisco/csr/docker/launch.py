@@ -185,6 +185,7 @@ ip ssh version 2
 
 restconf
 netconf-yang
+yes !required for IOS-XE 16.x
 
 line vty 0 4
 login local
