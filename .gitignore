@@ -2,8 +2,10 @@
 .idea
 venv
 *.qcow2
+*.qcow
 cisco*.bin
 *.gz
+*.tgz
 *.xz
 *.vmdk
 *.iso
