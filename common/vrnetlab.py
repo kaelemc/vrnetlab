@@ -265,7 +265,7 @@ class VM:
                 self.tn.open()
                 break
             except Exception as e:
-                self.logger.debug(
+                self.logger.error(
                     "Unable to connect to qemu monitor (port {}), retrying in a second (attempt {})\nError: {}".format(
                         5000 + self.num, i, e
                     )
