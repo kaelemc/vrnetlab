@@ -182,7 +182,7 @@ class XRv9k_vm(vrnetlab.VM):
             "transport": "telnet",
             "timeout_socket": 300,
             "timeout_transport": 300,
-            "timeout_ops": 90,
+            "timeout_ops": 150,
         }
         
         xrv9k_config = f"""hostname {self.hostname}

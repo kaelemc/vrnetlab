@@ -160,7 +160,7 @@ class cat9kv_vm(vrnetlab.VM):
             "transport": "telnet",
             "timeout_socket": 300,
             "timeout_transport": 300,
-            "timeout_ops": 90,
+            "timeout_ops": 150,
         }
         
         # bootstrap configuration

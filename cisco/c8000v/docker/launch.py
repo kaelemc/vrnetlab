@@ -160,7 +160,7 @@ class C8000v_vm(vrnetlab.VM):
             "transport": "telnet",
             "timeout_socket": 300,
             "timeout_transport": 300,
-            "timeout_ops": 90,
+            "timeout_ops": 150,
         }
         
         cat8k_config = f"""hostname {self.hostname}
