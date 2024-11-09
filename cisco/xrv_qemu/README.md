@@ -1,6 +1,7 @@
 # vrnetlab / Cisco IOS XRv
 
-This is the vrnetlab docker image for Cisco IOS XRv. This image uses the vmdk image, if you have the Qemu image use the 'xrv_qemu' directory.
+This is the vrnetlab docker image for Cisco IOS XRv. Using the QCOW2 image, rather than the VMDK. You can obtain the QCOW2 from CML/VIRL.
+- If you have the vmdk image for XRv use the 'xrv' directory instead.
 
 > Originally developed by Kristian Larsson (@plajjan), adapted by @hellt to be integrated with [containerlab](https://containerlab.srlinux.dev) networking.  
 
@@ -23,7 +24,7 @@ weird issues when trying to use less RAM.
 
 ## Building the docker image
 
-Obtain XRv vmkd image and put the .vmdk file in this directory and run `make docker-image`. The resulting image is called `vrnetlab/vr-xrv`. You can tag it with something else if you want, like `my-repo.example.com/vr-xrv` and then
-push it to your repo. The tag is the same as the version of the XRv image, so if you have iosxrv-k9-demo.vmdk-5.3.3 your final docker image will be called `vrnetlab/vr-xrv:5.3.3`
+Obtain XRv qcow2 image and put the .qcow2 file in this directory and run `make docker-image`. The resulting image is called `vrnetlab/vr-xrv`. You can tag it with something else if you want, like `my-repo.example.com/vr-xrv` and then
+push it to your repo. The tag is the same as the version of the XRv image, so if you have iosxrv-k9-demo-6.3.1.qcow2 your final docker image will be called `vrnetlab/cisco_xrv:6.3.1`
 
  * 6.1.2
