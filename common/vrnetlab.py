@@ -210,7 +210,7 @@ class VM:
             self.qemu_args.insert(1, "-enable-kvm")
 
     def start(self):
-        self.logger.info("Starting %s" % self.__class__.__name__)
+        self.logger.info(f"Launching {self.__class__.__name__} with {self.smp} and {self.ram}M of RAM.")
         self.start_time = datetime.datetime.now()
 
         cmd = list(self.qemu_args)
@@ -241,7 +241,7 @@ class VM:
         # generate dummy NICs
         if self.insuffucient_nics:
             cmd.extend(self.gen_dummy_nics())
-
+            
         self.logger.info("qemu cmd: {}".format(" ".join(cmd)))
 
         self.p = subprocess.Popen(
@@ -624,7 +624,7 @@ class VM:
         output on STDOUT from qemu which means we restart it.
         """
         if self.p is None:
-            self.logger.info("VM not started; starting!")
+            self.logger.warning("VM not started; starting!")
             self.start()
 
         # check for output
@@ -636,7 +636,7 @@ class VM:
         self.logger.info("STDERR: %s" % errs)
 
         if errs != "":
-            self.logger.debug("KVM error, restarting")
+            self.logger.error("KVM error, restarting")
             self.stop()
             self.start()
 
@@ -720,7 +720,6 @@ class VR:
 
     def start(self):
         """Start the virtual router"""
-        self.logger.info("Starting vrnetlab %s" % self.__class__.__name__)
         self.logger.info("VMs: %s" % self.vms)
 
         started = False
