@@ -210,6 +210,11 @@ class VM:
             self.qemu_args.insert(1, "-enable-kvm")
 
     def start(self):
+        
+        self.logger.info("ENVIRONMENT VARIABLES")
+        for var, value in os.environ.items():
+            self.logger.info(f"{var}: {value}")
+        
         self.logger.info(f"Launching {self.__class__.__name__} with {self.smp} and {self.ram}M of RAM.")
         self.start_time = datetime.datetime.now()
 

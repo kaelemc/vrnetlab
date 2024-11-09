@@ -246,7 +246,6 @@ if __name__ == "__main__":
         )
     )
 
-    logger.debug(f"Environment variables: {os.environ}")
     vrnetlab.boot_delay()
 
     vr = XRV(args.hostname, args.username, args.password, args.connection_mode)

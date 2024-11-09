@@ -215,7 +215,6 @@ if __name__ == "__main__":
     if args.trace:
         logger.setLevel(1)
 
-    logger.debug(f"Environment variables: {os.environ}")
     vrnetlab.boot_delay()
 
     vr = N9KV(args.hostname, args.username, args.password, args.connection_mode)

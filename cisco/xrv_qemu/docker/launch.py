@@ -244,10 +244,6 @@ if __name__ == "__main__":
     if args.trace:
         logger.setLevel(1)
 
-    logger.debug("ENVIRONMENT VARIABLES")
-    for var, value in os.environ.items():
-        logger.debug(f"{var}: {value}")
-
     vrnetlab.boot_delay()
 
     vr = XRV(args.hostname, args.username, args.password, args.connection_mode, args.vcpu, args.ram)

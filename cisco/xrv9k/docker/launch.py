@@ -305,10 +305,6 @@ if __name__ == "__main__":
     if args.trace:
         logger.setLevel(1)
 
-    logger.debug("ENVIRONMENT VARIABLES")
-    for var, value in os.environ.items():
-        logger.debug(f"{var}: {value}")
-    # logger.debug(f"Environment variables: {os.environ}")
     vrnetlab.boot_delay()
 
     if args.install:
