@@ -155,9 +155,9 @@ class CSR_vm(vrnetlab.VM):
             "auth_bypass": True,
             "auth_strict_key": False,
             "transport": "telnet",
-            "timeout_socket": 300,
-            "timeout_transport": 300,
-            "timeout_ops": 150,
+            "timeout_socket": 600,
+            "timeout_transport": 600,
+            "timeout_ops": 600,
         }
         
         csr_config = f"""hostname {self.hostname}
