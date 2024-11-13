@@ -155,9 +155,9 @@ class CSR_vm(vrnetlab.VM):
             "auth_bypass": True,
             "auth_strict_key": False,
             "transport": "telnet",
-            "timeout_socket": 600,
-            "timeout_transport": 600,
-            "timeout_ops": 600,
+            "timeout_socket": scrapli_timeout,
+            "timeout_transport": scrapli_timeout,
+            "timeout_ops": scrapli_timeout,
         }
         
         csr_config = f"""hostname {self.hostname}
@@ -184,8 +184,6 @@ crypto key generate rsa modulus 2048
 ip ssh version 2
 
 restconf
-netconf-yang
-yes !required for IOS-XE 16.x
 
 line vty 0 4
 login local
@@ -269,6 +267,8 @@ if __name__ == "__main__":
     # logger.setLevel(logging.DEBUG)
     if args.trace:
         logger.setLevel(1)
+        
+    scrapli_timeout = os.getenv("SCRAPLI_TIMEOUT", 3600)
 
     if args.install:
         vr = CSR_installer(
