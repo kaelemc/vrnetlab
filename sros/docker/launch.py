@@ -964,9 +964,9 @@ class SROS_vm(vrnetlab.VM):
 
         self.qemu_args.extend(["-drive", f"if=virtio,index={disk_idx},file={path}"])
 
-    # override wait_write clean_buffer parameter default
-    def wait_write(self, cmd, wait="__defaultpattern__", con=None, clean_buffer=True):
-        super().wait_write(cmd, wait, con, clean_buffer)
+    # # override wait_write clean_buffer parameter default
+    # def wait_write(self, cmd, wait="__defaultpattern__", con=None, clean_buffer=True):
+    #     super().wait_write(cmd, wait, con, clean_buffer)
 
     def bootstrap_spin(self):
         """This function should be called periodically to do work."""
@@ -1678,8 +1678,6 @@ if __name__ == "__main__":
     logger.debug(
         f"acting flags: username '{args.username}', password '{args.password}', connection-mode '{args.connection_mode}', variant '{args.variant}'"
     )
-
-    logger.debug(f"Environment variables: {os.environ}")
 
     vrnetlab.boot_delay()
 
