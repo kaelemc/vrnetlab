@@ -21,6 +21,7 @@ RUN apt-get update -qy \
    python3-pip \
    python3-passlib \
    dosfstools \
+   genisoimage \
    && rm -rf /var/lib/apt/lists/*
 
 RUN pip install https://github.com/carlmontanari/scrapli/archive/refs/tags/2024.07.30.zip --break-system-packages
