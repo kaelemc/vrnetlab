@@ -24,4 +24,4 @@ RUN apt-get update -qy \
    genisoimage \
    && rm -rf /var/lib/apt/lists/*
 
-RUN pip install https://github.com/carlmontanari/scrapli/archive/refs/tags/2024.07.30.zip --break-system-packages
+RUN pip install https://github.com/carlmontanari/scrapli/archive/refs/tags/2024.07.30.post1.zip --break-system-packages
