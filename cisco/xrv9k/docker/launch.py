@@ -252,6 +252,18 @@ commit
                 self.logger.error(f"Failed to load startup configuration.")
                 return
 
+    @property
+    def smp(self):
+        """
+        Read SMP parameter (e.g. number of CPU cores) from the QEMU_SMP environment variable.
+        If the QEMU_SMP parameter is not set, the default value is used.
+        Should be provided as a number, e.g. 2
+        """
+
+        if "QEMU_SMP" in os.environ:
+            return str(f'cores={os.getenv("QEMU_SMP")},threads=1,sockets=1')
+
+        return str(self._smp)
 
 class XRv9k(vrnetlab.VR):
     def __init__(self, hostname, username, password, nics, conn_mode):
