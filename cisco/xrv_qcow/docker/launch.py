@@ -50,13 +50,6 @@ class XRV_vm(vrnetlab.VM):
         self.num_nics = 128
         
         self.xr_ready = False
-        
-        self.qemu_args.extend(
-            [
-                "-nographic"
-            ]
-        )
-        
         self.credentials = []
         
     def bootstrap_spin(self):
