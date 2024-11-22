@@ -13,6 +13,8 @@ from scrapli.driver.core import IOSXEDriver
 
 STARTUP_CONFIG_FILE = "/config/startup-config.cfg"
 
+DEFAULT_SMP = 4
+DEFAULT_RAM = 18432 # in MB
 
 def handle_SIGCHLD(signal, frame):
     os.waitpid(-1, os.WNOHANG)
@@ -40,7 +42,7 @@ logging.Logger.trace = trace
 
 
 class cat9kv_vm(vrnetlab.VM):
-    def __init__(self, hostname, username, password, conn_mode, vcpu, ram):
+    def __init__(self, hostname, username, password, conn_mode):
         disk_image = None
         for e in sorted(os.listdir("/")):
             if not disk_image and re.search(".qcow2$", e):
@@ -50,8 +52,8 @@ class cat9kv_vm(vrnetlab.VM):
             username,
             password,
             disk_image=disk_image,
-            smp=f"cores={vcpu},threads=1,sockets=1",
-            ram=ram,
+            smp=f"cores={DEFAULT_SMP},threads=1,sockets=1",
+            ram=DEFAULT_RAM,
             min_dp_nics=8,
         )
         self.hostname = hostname
@@ -209,9 +211,9 @@ transport input all
                 self.logger.info(f"CONFIG RESULT: {response.result}")
 
 class cat9kv(vrnetlab.VR):
-    def __init__(self, hostname, username, password, conn_mode, vcpu, ram):
+    def __init__(self, hostname, username, password, conn_mode):
         super(cat9kv, self).__init__(username, password)
-        self.vms = [cat9kv_vm(hostname, username, password, conn_mode, vcpu, ram)]
+        self.vms = [cat9kv_vm(hostname, username, password, conn_mode)]
 
 
 if __name__ == "__main__":
@@ -247,7 +249,5 @@ if __name__ == "__main__":
         args.username,
         args.password,
         args.connection_mode,
-        args.vcpu,
-        args.ram,
     )
     vr.start()

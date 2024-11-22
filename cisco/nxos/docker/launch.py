@@ -12,6 +12,8 @@ import vrnetlab
 
 STARTUP_CONFIG_FILE = "/config/startup-config.cfg"
 
+DEFAULT_SMP = 2
+DEFAULT_RAM = 4096 # in MB
 
 def handle_SIGCHLD(signal, frame):
     os.waitpid(-1, os.WNOHANG)
@@ -44,7 +46,7 @@ class NXOS_vm(vrnetlab.VM):
             if re.search(".qcow2$", e):
                 disk_image = "/" + e
         super(NXOS_vm, self).__init__(
-            username, password, disk_image=disk_image, ram=4096, smp="2"
+            username, password, disk_image=disk_image, ram=DEFAULT_RAM, smp=DEFAULT_SMP
         )
         self.credentials = [["admin", "admin"]]
         self.hostname = hostname

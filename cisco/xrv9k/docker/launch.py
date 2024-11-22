@@ -15,8 +15,8 @@ from scrapli.driver.core import IOSXRDriver
 STARTUP_CONFIG_FILE = "/config/startup-config.cfg"
 
 DEFAULT_SCRAPLI_TIMEOUT = 2700
-DEFAULT_VCPU = 4
-DEFAULT_RAM = 16384
+DEFAULT_SMP = 4
+DEFAULT_RAM = 16384 # in MB
 
 def handle_SIGCHLD(signal, frame):
     os.waitpid(-1, os.WNOHANG)
@@ -44,12 +44,12 @@ logging.Logger.trace = trace
 
 
 class XRv9k_vm(vrnetlab.VM):
-    def __init__(self, hostname, username, password, nics, conn_mode, vcpu, ram, install=False):
+    def __init__(self, hostname, username, password, nics, conn_mode, install=False):
         disk_image = None
         for e in sorted(os.listdir("/")):
             if not disk_image and re.search(".qcow2", e):
                 disk_image = "/" + e
-        super(XRv9k_vm, self).__init__(username, password, disk_image=disk_image, ram=ram, smp=f"cores={vcpu},threads=1,sockets=1")
+        super(XRv9k_vm, self).__init__(username, password, disk_image=disk_image, ram=DEFAULT_RAM, smp=f"cores={DEFAULT_SMP},threads=1,sockets=1")
         
         self.hostname = hostname
         self.conn_mode = conn_mode
@@ -178,6 +178,7 @@ class XRv9k_vm(vrnetlab.VM):
         
         self.tn.close()
         
+        scrapli_timeout = os.getenv('SCRAPLI_TIMEOUT', DEFAULT_SCRAPLI_TIMEOUT)
         self.logger.info(f"Scrapli timeout is {scrapli_timeout} seconds. (Default: {DEFAULT_SCRAPLI_TIMEOUT})")
         
         # init scrapli
@@ -253,9 +254,9 @@ commit
 
 
 class XRv9k(vrnetlab.VR):
-    def __init__(self, hostname, username, password, nics, conn_mode, vcpu, ram):
+    def __init__(self, hostname, username, password, nics, conn_mode):
         super(XRv9k, self).__init__(username, password)
-        self.vms = [XRv9k_vm(hostname, username, password, nics, conn_mode, vcpu, ram)]
+        self.vms = [XRv9k_vm(hostname, username, password, nics, conn_mode)]
 
 
 class XRv9k_Installer(XRv9k):
@@ -266,9 +267,9 @@ class XRv9k_Installer(XRv9k):
         By running this "install" when building the docker image we can
         decrease the normal startup time of the XRV.
     """
-    def __init__(self, hostname, username, password, nics, conn_mode, vcpu, ram):
+    def __init__(self, hostname, username, password, nics, conn_mode):
         super(XRv9k, self).__init__(username, password)
-        self.vms = [XRv9k_vm(hostname, username, password, nics, conn_mode, vcpu, ram, install=True)]
+        self.vms = [XRv9k_vm(hostname, username, password, nics, conn_mode, install=True)]
     
     def install(self):
         self.logger.info("Installing XRv9k")
@@ -305,11 +306,6 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     
-    scrapli_timeout = os.getenv('SCRAPLI_TIMEOUT', DEFAULT_SCRAPLI_TIMEOUT)
-    vcpu = os.getenv('VCPU', DEFAULT_VCPU)
-    ram = os.getenv('RAM', DEFAULT_RAM)
-    
-
     LOG_FORMAT = "%(asctime)s: %(module)-10s %(levelname)-8s %(message)s"
     logging.basicConfig(format=LOG_FORMAT)
     logger = logging.getLogger()
@@ -327,8 +323,6 @@ if __name__ == "__main__":
             args.password,
             args.nics,
             args.connection_mode,
-            vcpu,
-            ram,
         )
         vr.install()
     else:
@@ -338,7 +332,5 @@ if __name__ == "__main__":
             args.password,
             args.nics,
             args.connection_mode,
-            vcpu,
-            ram,
         )
         vr.start()

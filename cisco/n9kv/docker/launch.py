@@ -12,6 +12,8 @@ import vrnetlab
 
 STARTUP_CONFIG_FILE = "/config/startup-config.cfg"
 
+DEFAULT_SMP = 4
+DEFAULT_RAM = 10240 # in MB
 
 def handle_SIGCHLD(signal, frame):
     os.waitpid(-1, os.WNOHANG)
@@ -48,8 +50,8 @@ class N9KV_vm(vrnetlab.VM):
             logging.getLogger().info("Disk image was not found")
             exit(1)
         super(N9KV_vm, self).__init__(
-            username, password, disk_image=disk_image, ram=10240,
-            smp=4, cpu="host,level=9"
+            username, password, disk_image=disk_image, ram=DEFAULT_RAM,
+            smp=DEFAULT_SMP, cpu="host,level=9"
         )
         self.hostname = hostname
         self.conn_mode = conn_mode

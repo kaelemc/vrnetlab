@@ -12,6 +12,8 @@ import vrnetlab
 
 STARTUP_CONFIG_FILE = "/config/startup-config.cfg"
 
+DEFAULT_SMP = 2
+DEFAULT_RAM = 4096
 
 def handle_SIGCHLD(signal, frame):
     os.waitpid(-1, os.WNOHANG)
@@ -38,12 +40,12 @@ def trace(self, message, *args, **kws):
 logging.Logger.trace = trace
 
 class XRV_vm(vrnetlab.VM):
-    def __init__(self, hostname, username, password, conn_mode, vcpu, ram):
+    def __init__(self, hostname, username, password, conn_mode):
         for e in os.listdir("/"):
             if re.search(".qcow2", e):
                 disk_image = "/" + e
         super(XRV_vm, self).__init__(
-            username, password, disk_image=disk_image, ram=ram, smp=f"cores={vcpu},threads=1,sockets=1"
+            username, password, disk_image=disk_image, ram=DEFAULT_RAM, smp=f"cores={DEFAULT_SMP},threads=1,sockets=1"
         )
         self.hostname = hostname
         self.conn_mode = conn_mode
@@ -115,7 +117,7 @@ class XRV_vm(vrnetlab.VM):
 
         # no match, if we saw some output from the router it's probably
         # booting, so let's give it some more time
-        if res != "":
+        if res != b"":
             self.print(res)
             # reset spins if we saw some output
             self.spins = 0
@@ -201,16 +203,16 @@ class XRV_vm(vrnetlab.VM):
         self.wait_write("exit")
 
 class XRV(vrnetlab.VR):
-    def __init__(self, hostname, username, password, conn_mode, vcpu, ram):
+    def __init__(self, hostname, username, password, conn_mode):
         super(XRV, self).__init__(username, password)
-        self.vms = [XRV_vm(hostname, username, password, conn_mode, vcpu, ram)]
+        self.vms = [XRV_vm(hostname, username, password, conn_mode)]
 
 
 if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(description="")
-    parser.add_argument("--hostname", default="vr-xrv", help="Router hostname")
+    parser.add_argument("--hostname", default="cisco_xrv", help="Router hostname")
     parser.add_argument(
         "--trace", action="store_true", help="enable trace level logging"
     )
@@ -220,12 +222,6 @@ if __name__ == "__main__":
         "--connection-mode",
         default="vrxcon",
         help="Connection mode to use in the datapath",
-    )
-    parser.add_argument(
-        "--vcpu", type=int, default=2, help="Number of cpu cores to use"
-    )
-    parser.add_argument(
-        "--ram", type=int, default=4096, help="Amonut of RAM to allocate in MB"
     )
     args = parser.parse_args()
 
@@ -239,5 +235,5 @@ if __name__ == "__main__":
 
     vrnetlab.boot_delay()
 
-    vr = XRV(args.hostname, args.username, args.password, args.connection_mode, args.vcpu, args.ram)
+    vr = XRV(args.hostname, args.username, args.password, args.connection_mode)
     vr.start()

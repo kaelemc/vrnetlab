@@ -14,6 +14,8 @@ import vrnetlab
 
 STARTUP_CONFIG_FILE = "/config/startup-config.cfg"
 
+DEFAULT_SMP = 2
+DEFAULT_RAM = 4096
 
 def handle_SIGCHLD(signal, frame):
     os.waitpid(-1, os.WNOHANG)
@@ -46,12 +48,12 @@ class XRV_vm(vrnetlab.VM):
             if re.search(".vmdk", e):
                 disk_image = "/" + e
         super(XRV_vm, self).__init__(
-            username, password, disk_image=disk_image, ram=3072
+            username, password, disk_image=disk_image, ram=DEFAULT_RAM, smp=f"cores={DEFAULT_SMP},threads=1,sockets=1"
         )
         self.hostname = hostname
         self.conn_mode = conn_mode
         self.num_nics = 128
-        self.credentials = [["admin", "admin"]]
+        self.credentials = []
 
         self.xr_ready = False
 
@@ -239,12 +241,6 @@ if __name__ == "__main__":
     logger.setLevel(logging.DEBUG)
     if args.trace:
         logger.setLevel(1)
-
-    logger.debug(
-        "acting flags: username '{}', password '{}', connection-mode '{}'".format(
-            args.username, args.password, args.connection_mode
-        )
-    )
 
     vrnetlab.boot_delay()
 

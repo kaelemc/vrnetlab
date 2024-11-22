@@ -15,6 +15,8 @@ from scrapli.driver.core import IOSXEDriver
 
 STARTUP_CONFIG_FILE = "/config/startup-config.cfg"
 
+DEFAULT_SMP = 1
+DEFAULT_RAM = 4096 # in MB
 
 def handle_SIGCHLD(signal, frame):
     os.waitpid(-1, os.WNOHANG)
@@ -57,7 +59,7 @@ class CSR_vm(vrnetlab.VM):
             logger.info("License found")
             self.license = True
 
-        super(CSR_vm, self).__init__(username, password, disk_image=disk_image)
+        super(CSR_vm, self).__init__(username, password, disk_image=disk_image, ram=DEFAULT_RAM, smp=f"cores={DEFAULT_SMP},threads=1,sockets=1")
 
         self.install_mode = install_mode
         self.num_nics = nics

@@ -11,6 +11,9 @@ import time
 import vrnetlab
 
 
+DEFAULT_SMP = 4
+DEFAULT_RAM = 8192 # in MB
+
 def handle_SIGCHLD(signal, frame):
     os.waitpid(-1, os.WNOHANG)
 
@@ -43,7 +46,7 @@ class ASAv_vm(vrnetlab.VM):
                 disk_image = "/" + e
 
         super(ASAv_vm, self).__init__(
-            username, password, disk_image=disk_image, ram=2048
+            username, password, disk_image=disk_image, ram=DEFAULT_RAM, smp=f"cores={DEFAULT_SMP},threads=1,sockets=1"
         )
         self.nic_type = "e1000"
         self.install_mode = install_mode

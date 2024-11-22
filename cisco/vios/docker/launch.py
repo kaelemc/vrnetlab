@@ -10,6 +10,8 @@ import vrnetlab
 
 STARTUP_CONFIG_FILE = "/config/startup-config.cfg"
 
+DEFAULT_VCPU = 1
+DEFAULT_RAM = 512 # in MB
 
 def handle_SIGCHLD(_signal, _frame):
     os.waitpid(-1, os.WNOHANG)
@@ -49,8 +51,8 @@ class VIOS_vm(vrnetlab.VM):
             username=username,
             password=password,
             disk_image=disk_image,
-            smp="1",
-            ram=512,
+            smp=DEFAULT_VCPU,
+            ram=DEFAULT_RAM,
             driveif="virtio",
         )
 

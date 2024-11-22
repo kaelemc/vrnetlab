@@ -18,7 +18,6 @@ DEFAULT_SCRAPLI_TIMEOUT = 2700
 DEFAULT_VCPU = 1
 DEFAULT_RAM = 4096 # in MB
 
-
 def handle_SIGCHLD(signal, frame):
     os.waitpid(-1, os.WNOHANG)
 
@@ -45,7 +44,7 @@ logging.Logger.trace = trace
 
 
 class C8000v_vm(vrnetlab.VM):
-    def __init__(self, hostname, username, password, conn_mode, vcpu, ram, install_mode=False):
+    def __init__(self, hostname, username, password, conn_mode, install_mode=False):
         disk_image = None
         for e in sorted(os.listdir("/")):
             if not disk_image and re.search(".qcow2$", e):
@@ -58,7 +57,7 @@ class C8000v_vm(vrnetlab.VM):
             logger.info("License found")
             self.license = True
 
-        super().__init__(username, password, disk_image=disk_image, ram=ram, smp=f"cores={vcpu},threads=1,sockets=1")
+        super().__init__(username, password, disk_image=disk_image, ram=DEFAULT_RAM, smp=f"cores={DEFAULT_VCPU},threads=1,sockets=1")
         self.install_mode = install_mode
         self.hostname = hostname
         self.conn_mode = conn_mode
@@ -156,6 +155,7 @@ class C8000v_vm(vrnetlab.VM):
         
         self.tn.close()
         
+        scrapli_timeout = os.getenv('SCRAPLI_TIMEOUT', DEFAULT_SCRAPLI_TIMEOUT)
         self.logger.info(f"Scrapli timeout is {scrapli_timeout} seconds. (Default: {DEFAULT_SCRAPLI_TIMEOUT})")
         
         # init scrapli
@@ -213,9 +213,9 @@ transport input all
                 self.logger.info(f"CONFIG RESULT: {response.result}")
 
 class C8000v(vrnetlab.VR):
-    def __init__(self, hostname, username, password, conn_mode, vcpu, ram):
+    def __init__(self, hostname, username, password, conn_mode):
         super(C8000v, self).__init__(username, password)
-        self.vms = [C8000v_vm(hostname, username, password, conn_mode, vcpu, ram)]
+        self.vms = [C8000v_vm(hostname, username, password, conn_mode)]
 
 
 class C8000v_installer(C8000v):
@@ -225,10 +225,10 @@ class C8000v_installer(C8000v):
     console output on serial, not vga.
     """
 
-    def __init__(self, hostname, username, password, conn_mode, vcpu, ram):
-        super(C8000v_installer, self).__init__(hostname, username, password, conn_mode, vcpu, ram)
+    def __init__(self, hostname, username, password, conn_mode):
+        super(C8000v_installer, self).__init__(hostname, username, password, conn_mode)
         self.vms = [
-            C8000v_vm(hostname, username, password, conn_mode, vcpu, ram, install_mode=True)
+            C8000v_vm(hostname, username, password, conn_mode, install_mode=True)
         ]
 
     def install(self):
@@ -266,15 +266,11 @@ if __name__ == "__main__":
     if args.trace:
         logger.setLevel(1)
 
-    scrapli_timeout = os.getenv('SCRAPLI_TIMEOUT', DEFAULT_SCRAPLI_TIMEOUT)
-    vcpu = os.getenv('VCPU', DEFAULT_VCPU)
-    ram = os.getenv('RAM', DEFAULT_RAM)
-
     if args.install:
         vr = C8000v_installer(
-            args.hostname, args.username, args.password, args.connection_mode, vcpu, ram
+            args.hostname, args.username, args.password, args.connection_mode
         )
         vr.install()
     else:
-        vr = C8000v(args.hostname, args.username, args.password, args.connection_mode, vcpu, ram)
+        vr = C8000v(args.hostname, args.username, args.password, args.connection_mode)
         vr.start()

@@ -11,6 +11,8 @@ import time
 
 import vrnetlab
 
+DEFAULT_SMP = 4
+DEFAULT_RAM = 8192 # in MB
 
 def handle_SIGCHLD(signal, frame):
     os.waitpid(-1, os.WNOHANG)
@@ -50,7 +52,7 @@ class FTDV_vm(vrnetlab.VM):
         self.license = False
 
         super(FTDV_vm, self).__init__(
-            username, password, disk_image=disk_image, ram=8192, smp="4,sockets=1,cores=4,threads=1"
+            username, password, disk_image=disk_image, ram=8192, smp=f"cores={DEFAULT_SMP},threads=1,sockets=1"
         )
         
         self.login_ready = False

@@ -215,7 +215,7 @@ class VM:
         for var, value in os.environ.items():
             self.logger.info(f"{var}: {value}")
         
-        self.logger.info(f"Launching {self.__class__.__name__} with {self.smp} and {self.ram}M of RAM.")
+        self.logger.info(f"Launching {self.__class__.__name__} with {self.smp} SMP/VCPU and {self.ram} M of RAM.")
         self.start_time = datetime.datetime.now()
 
         cmd = list(self.qemu_args)
