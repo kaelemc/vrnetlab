@@ -14,6 +14,9 @@ from scrapli.driver.core import IOSXRDriver
 
 STARTUP_CONFIG_FILE = "/config/startup-config.cfg"
 
+DEFAULT_SCRAPLI_TIMEOUT = 2700
+DEFAULT_VCPU = 4
+DEFAULT_RAM = 16384
 
 def handle_SIGCHLD(signal, frame):
     os.waitpid(-1, os.WNOHANG)
@@ -127,6 +130,7 @@ class XRv9k_vm(vrnetlab.VM):
             [
                 b"Press RETURN to get started",
                 b"Enter root-system [U|u]sername",
+                b"SDR\/XR partition preparation completed successfully",
             ],
             1,
         )
@@ -137,7 +141,6 @@ class XRv9k_vm(vrnetlab.VM):
                 self.wait_write("", wait=None)
             if ridx == 1:  # system configuration complete
                 if self.install_mode:
-                    self.running = True
                     return
                 self.logger.info("Creating initial user")
                 self.wait_write(self.username, wait=None)
@@ -156,6 +159,9 @@ class XRv9k_vm(vrnetlab.VM):
                 # mark as running
                 self.running = True
                 return
+            if ridx == 2 and self.install_mode:
+                self.running = True
+                return
 
         # no match, if we saw some output from the router it's probably
         # booting, so let's give it some more time
@@ -172,6 +178,8 @@ class XRv9k_vm(vrnetlab.VM):
         
         self.tn.close()
         
+        self.logger.info(f"Scrapli timeout is {scrapli_timeout} seconds. (Default: {DEFAULT_SCRAPLI_TIMEOUT})")
+        
         # init scrapli
         xrv9k_scrapli_dev = {
             "host": "127.0.0.1",
@@ -180,9 +188,9 @@ class XRv9k_vm(vrnetlab.VM):
             "auth_password": self.password,
             "auth_strict_key": False,
             "transport": "telnet",
-            "timeout_socket": 300,
-            "timeout_transport": 300,
-            "timeout_ops": 150,
+            "timeout_socket": scrapli_timeout,
+            "timeout_transport": scrapli_timeout,
+            "timeout_ops": scrapli_timeout,
         }
         
         xrv9k_config = f"""hostname {self.hostname}
@@ -267,7 +275,7 @@ class XRv9k_Installer(XRv9k):
         xrv = self.vms[0]
         while not xrv.running:
             xrv.work()
-        time.sleep(30)
+        time.sleep(2)
         xrv.stop()
         self.logger.info("Installation complete")
 
@@ -296,6 +304,11 @@ if __name__ == "__main__":
         help="Connection mode to use in the datapath",
     )
     args = parser.parse_args()
+    
+    scrapli_timeout = os.getenv('SCRAPLI_TIMEOUT', DEFAULT_SCRAPLI_TIMEOUT)
+    vcpu = os.getenv('VCPU', DEFAULT_VCPU)
+    ram = os.getenv('RAM', DEFAULT_RAM)
+    
 
     LOG_FORMAT = "%(asctime)s: %(module)-10s %(levelname)-8s %(message)s"
     logging.basicConfig(format=LOG_FORMAT)
@@ -314,8 +327,8 @@ if __name__ == "__main__":
             args.password,
             args.nics,
             args.connection_mode,
-            args.vcpu,
-            args.ram,
+            vcpu,
+            ram,
         )
         vr.install()
     else:
@@ -325,7 +338,7 @@ if __name__ == "__main__":
             args.password,
             args.nics,
             args.connection_mode,
-            args.vcpu,
-            args.ram,
+            vcpu,
+            ram,
         )
         vr.start()
