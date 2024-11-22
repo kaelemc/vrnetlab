@@ -84,11 +84,11 @@ class VM:
     ):
         
         # set fancy logging colours
-        logging.addLevelName( logging.INFO, "\033[1;92m%s\033[1;0m" % logging.getLevelName(logging.INFO))
-        logging.addLevelName( logging.WARN, "\033[38;5;220m%s\033[1;0m" % logging.getLevelName(logging.WARN))
-        logging.addLevelName( logging.DEBUG, "\033[1;91m%s\033[1;0m" % logging.getLevelName(logging.DEBUG))
-        logging.addLevelName( logging.ERROR, "\033[1;91m%s\033[1;0m" % logging.getLevelName(logging.ERROR))
-        logging.addLevelName( logging.CRITICAL, "\033[1;91m%s\033[1;0m" % logging.getLevelName(logging.CRITICAL))
+        logging.addLevelName( logging.INFO, f"\033[1;92m{logging.getLevelName(logging.INFO)}\033[1;0m")
+        logging.addLevelName( logging.WARN, f"\033[38;5;220m{logging.getLevelName(logging.WARN)}\033[1;0m")
+        logging.addLevelName( logging.DEBUG, f"\033[1;91m{logging.getLevelName(logging.DEBUG)}\033[1;0m")
+        logging.addLevelName( logging.ERROR, f"\033[1;91m{logging.getLevelName(logging.ERROR)}\033[1;0m")
+        logging.addLevelName( logging.CRITICAL, f"\033[1;91m{logging.getLevelName(logging.CRITICAL)}\033[1;0m")
         
         # set default logger for vrnetlab VM class
         self.logger = logging.getLogger("vrnetlab")
@@ -580,12 +580,14 @@ class VM:
             if wait == "__defaultpattern__":
                 wait = self.wait_pattern
     
+            self.print(b"\n")
             self.logger.info(f"waiting for '{wait}' on console.")
             
             self.read_until(wait, timeout)
 
         time.sleep(0.1) # don't write to the console too fast
         
+        self.print(b"\n")
         self.logger.info(f"writing to console: '{cmd}'")
         self.tn.channel.write(f"{cmd}\r")
     
