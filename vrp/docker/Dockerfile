@@ -1,21 +1,4 @@
-FROM public.ecr.aws/docker/library/debian:bookworm-slim
-MAINTAINER Kristian Larsson <kristian@spritelink.net>
-
-RUN apt-get update -qy \
-    && apt-get upgrade -qy \
-    && apt-get install -y \
-        qemu-kvm \
-        bridge-utils \
-        socat \
-        iproute2 \
-        python3-ipy \
-        python3-pexpect \
-        ssh \
-        git \
-        python3-pip \
-        && rm -rf /var/lib/apt/lists/*
-     
-RUN pip install git+https://github.com/carlmontanari/scrapli --break-system-packages
+FROM ghcr.io/srl-labs/vrnetlab-base:0.0.1
 
 ARG IMAGE
 COPY $IMAGE /
