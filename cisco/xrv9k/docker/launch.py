@@ -160,6 +160,7 @@ class XRv9k_vm(vrnetlab.VM):
                 self.running = True
                 return
             if ridx == 2 and self.install_mode:
+                self.logger.info(f"Installation completed, took {datetime.datetime.now() - self.start_time}")
                 self.running = True
                 return
 
@@ -261,7 +262,12 @@ commit
         """
 
         if "QEMU_SMP" in os.environ:
-            return str(f'cores={os.getenv("QEMU_SMP")},threads=1,sockets=1')
+            qemu_smp = os.getenv("QEMU_SMP")
+            # if the user has supplied only a core count set the correct smp
+            if re.match('^[0-9]+$', str(qemu_smp)):
+                return str(f'cores={qemu_smp},threads=1,sockets=1')
+            else:
+                return str(qemu_smp)
 
         return str(self._smp)
 
@@ -290,7 +296,6 @@ class XRv9k_Installer(XRv9k):
             xrv.work()
         time.sleep(2)
         xrv.stop()
-        self.logger.info("Installation complete")
 
 
 if __name__ == "__main__":
