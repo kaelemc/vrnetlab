@@ -95,12 +95,12 @@ class VM:
         self.logger.setLevel(logging.DEBUG)
         
         """
-        Configure root logger to only be INFO level.
-        Scrapli uses root logger by default, and 
-        will write all channel input as DEBUG logs.
+        Configure Scrapli logger to only be INFO level.
+        Scrapli uses 'scrapli' logger by default, and
+        will write all channel i/o as DEBUG logs.
         """
-        root_logger = logging.getLogger()
-        root_logger.setLevel(logging.INFO)
+        scrapli_logger = logging.getLogger("scrapli")
+        scrapli_logger.setLevel(logging.INFO)
         
         # init scrapli
         self.scrapli_dev = {
@@ -588,7 +588,7 @@ class VM:
         time.sleep(0.1) # don't write to the console too fast
         
         self.print(b"\n")
-        self.logger.info(f"writing to console: '{cmd}'")
+        self.logger.info(f"Writing to console: '{cmd}'")
         self.tn.channel.write(f"{cmd}\r")
     
     def expect(self, regex_list, timeout=None):
