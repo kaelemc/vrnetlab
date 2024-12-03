@@ -9,9 +9,8 @@ import subprocess
 import sys
 import uuid
 
-from passlib.hash import sha512_crypt
-
 import vrnetlab
+from passlib.hash import sha512_crypt
 
 # loadable startup config
 STARTUP_CONFIG_FILE = "/config/startup-config.cfg"
@@ -55,7 +54,7 @@ class VJUNOSEVOLVED_vm(vrnetlab.VM):
             driveif="virtio",
             cpu="IvyBridge,vme=on,ss=on,vmx=on,f16c=on,rdrand=on,hypervisor=on,arat=on,tsc-adjust=on,umip=on,arch-capabilities=on,pdpe1gb=on,skip-l1dfl-vmentry=on,pschange-mc-no=on,bmi1=off,avx2=off,bmi2=off,erms=off,invpcid=off,rdseed=off,adx=off,smap=off,xsaveopt=off,abm=off,svm=off",
             smp="4,sockets=1,cores=4,threads=1",
-            mgmt_passthrough=True
+            mgmt_passthrough=False,
         )
 
         # device hostname
