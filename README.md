@@ -50,13 +50,13 @@ _Pass-through management_ interfaces allows the use of the assigned management I
 
 NOSes defaulting to _pass-through_ management interfaces are:
 
-* All vJunos routers
+* None so far, we are gathering feedback on this, and will update this list as feedback is received. Please contact us in [Discord](https://discord.gg/vAyddtaEV9) or open up an issue here if you have found any issues when trying the passthrough mode.
 
 In case of _host-forwarded_ management interfaces, certain ports are forwarded to the NOS VM IP, which is always 10.0.0.15/24. The management gateway in this case is 10.0.0.2/24, and outgoing traffic is NATed to the container management IP. This management interface connection mode does not allow for traffic such as LLDP to pass through the management interface.
 
 NOSes defaulting to _host-forwarded_ management interfaces are:
 
-* None so far, we are gathering feedback on this, and will update this list as feedback is received. Please contact us in [Discord](https://discord.gg/vAyddtaEV9) or open up an issue here if you have found any issues when trying the passthrough mode.
+* all current systems
 
 It is possible to change from the default management interface mode by setting the `CLAB_MGMT_PASSTHROUGH` environment variable to 'true' or 'false', however, it is left up to the user to provide a startup configuration compatible with the requested mode.
 
