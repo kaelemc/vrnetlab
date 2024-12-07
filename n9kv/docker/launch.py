@@ -140,15 +140,24 @@ class N9KV_vm(vrnetlab.VM):
             f"username {self.username} password 0 {self.password} role network-admin"
         )
         
+        # enable ipv6
+        self.wait_write("ipv6 unicast-routing")
+        
         # configure management vrf
         self.wait_write("vrf context management")
-        self.wait_write("ip route 0.0.0.0/0 10.0.0.2")
+        self.wait_write(f"ip route 0.0.0.0/0 {self.mgmt_gw_ipv4}")
+        self.wait_write(f"ipv6 route ::/0 {self.mgmt_gw_ipv6}")
         self.wait_write("exit")
 
         # configure mgmt interface
         self.wait_write("interface mgmt0")
-        self.wait_write("ip address 10.0.0.15/24")
+        self.wait_write(f"ip address {self.mgmt_address_ipv4}")
+        self.wait_write(f"ipv6 address {self.mgmt_address_ipv6}")
         self.wait_write("exit")
+        
+        # configure longer ssh keys
+        self.wait_write("ssh key rsa 2048 force")
+        self.wait_write("feature ssh")
 
         # setup nxapi/scp server
         self.wait_write("feature scp-server")
