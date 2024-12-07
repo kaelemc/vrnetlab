@@ -138,17 +138,24 @@ class VIOS_vm(vrnetlab.VM):
         self.wait_write("exit")
 
         self.wait_write("vrf definition clab-mgmt")
+        self.wait_write("description Containerlab management VRF (DO NOT DELETE)")
         self.wait_write("address-family ipv4")
         self.wait_write("exit")
-        self.wait_write("description Management network")
+        self.wait_write("address-family ipv6")
         self.wait_write("exit")
+        self.wait_write("exit")
+        
+        v4_mgmt_address = vrnetlab.cidr_to_ddn(self.mgmt_address_ipv4)
 
         self.wait_write("interface GigabitEthernet0/0")
         self.wait_write("vrf forwarding clab-mgmt")
-        self.wait_write("ip address 10.0.0.15 255.255.255.0")
+        self.wait_write(f"ip address {v4_mgmt_address[0]} {v4_mgmt_address[1]}")
+        self.wait_write(f"ipv6 address {self.mgmt_address_ipv6}")
         self.wait_write("no shutdown")
         self.wait_write("exit")
-        self.wait_write("ip route vrf clab-mgmt 0.0.0.0 0.0.0.0 10.0.0.2")
+        
+        self.wait_write(f"ip route vrf clab-mgmt 0.0.0.0 0.0.0.0 {self.mgmt_gw_ipv4}")
+        self.wait_write(f"ipv6 route vrf clab-mgmt ::/0 {self.mgmt_gw_ipv6}")
 
         self.wait_write("crypto key generate rsa modulus 2048")
         self.wait_write("ip ssh version 2")
