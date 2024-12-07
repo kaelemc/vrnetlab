@@ -205,10 +205,10 @@ if __name__ == "__main__":
         default=os.getenv("TRACE", "false").lower() == "true",
     )
     parser.add_argument(
-        "--username", help="Username", default=os.getenv("USERNAME", "vrnetlab")
+        "--username", help="Username", default=os.getenv("USERNAME", "admin")
     )
     parser.add_argument(
-        "--password", help="Password", default=os.getenv("PASSWORD", "VR-netlab9")
+        "--password", help="Password", default=os.getenv("PASSWORD", "admin")
     )
     parser.add_argument(
         "--hostname", help="Router hostname", default=os.getenv("HOSTNAME", "vios")
