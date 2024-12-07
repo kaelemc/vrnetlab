@@ -140,9 +140,6 @@ class N9KV_vm(vrnetlab.VM):
             f"username {self.username} password 0 {self.password} role network-admin"
         )
         
-        # enable ipv6
-        self.wait_write("ipv6 unicast-routing")
-        
         # configure management vrf
         self.wait_write("vrf context management")
         self.wait_write(f"ip route 0.0.0.0/0 {self.mgmt_gw_ipv4}")
