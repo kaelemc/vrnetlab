@@ -121,6 +121,9 @@ class VIOS_vm(vrnetlab.VM):
         self.wait_write(f"hostname {self.hostname}")
         self.wait_write(f"ip domain-name {self.hostname}.clab")
         self.wait_write("no ip domain-lookup")
+        
+        # Explicitly enable IPv6
+        self.wait_write("ipv6 unicast-routing")
 
         self.wait_write(f"username {self.username} privilege 15 secret {self.password}")
 
