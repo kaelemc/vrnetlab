@@ -72,35 +72,9 @@ class XRV_vm(vrnetlab.VM):
 
     def gen_mgmt(self):
         """Generate qemu args for the mgmt interface(s)"""
-        res = []
         
-        
-        self.mgmt_mac = (
-            "c0:00:01:00:ca:fe"
-            if getattr(self, "_static_mgmt_mac", False)
-            else vrnetlab.gen_mac(0)
-        )
-        # mgmt interface
-        res.append(
-            f"-device virtio-net-pci,netdev=mgmt,mac={self.mgmt_mac} -netdev"
-        )
-        if self.mgmt_passthrough:
-            # mgmt interface is passthrough - we just create a normal mirred tap interface
-            res.append(
-                "tap,id=mgmt,ifname=tap0,script=/etc/tc-tap-mgmt-ifup,downscript=no"
-            )
-            self.create_tc_tap_mgmt_ifup()
-        else:
-            res.extend(
-                [
-                    "user,id=mgmt,net=10.0.0.0/24,"
-                    "tftp=/tftpboot,"
-                    "hostfwd=tcp:0.0.0.0:22-10.0.0.15:22,"
-                    "hostfwd=udp:0.0.0.0:161-10.0.0.15:161,"
-                    "hostfwd=tcp:0.0.0.0:830-10.0.0.15:830,"
-                    "hostfwd=tcp:0.0.0.0:57400-10.0.0.15:57400"
-                ]
-            )
+        res = super().gen_mgmt()
+    
         # dummy interface for xrv9k ctrl interface
         res.extend(
             [
