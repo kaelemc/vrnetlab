@@ -838,7 +838,7 @@ def get_digits(input_str: str) -> int:
     non_string_chars = re.findall(r"\d", input_str)
     return int("".join(non_string_chars))
 
-def cidr_to_ddn(prefix: str):
+def cidr_to_ddn(prefix: str) -> list[str]:
     """
     Convert a IPv4 CIDR notation prefix to address + mask in DDN notation
     
@@ -849,19 +849,5 @@ def cidr_to_ddn(prefix: str):
     returns ['192.168.0.1' ,'255.255.255.0']
     """
     
-    address, _, mask = prefix.partition("/")
-    mask = int(mask)
-    
-    if mask > 32 or mask <= 0:
-        raise ValueError(f"Prefix: {prefix} has invalid mask length. Should be from 1-32 (inclusive).")
-    
-    # turn the prefix length into a bitmask
-    bit_mask = f"{'1' * mask}{'0'*(32-mask)}"
-    
-    # split bit mask into 4 octets and convert to binary
-    octets = [bit_mask[i:i+8] for i in range(0, 32, 8)]
-    
-    # from each octet in the list, turn it into a single string and add the dots
-    ddn_mask = '.'.join(str(int(octet, 2)) for octet in octets)
-    
-    return([address, ddn_mask])
+    network = ipaddress.IPv4Interface(prefix)
+    return [str(network.ip), str(network.netmask)]
