@@ -16,7 +16,6 @@ import sys
 
 try:
     from scrapli import Driver
-    from scrapli.logging import enable_basic_logging
 except ImportError:
     pass
 
