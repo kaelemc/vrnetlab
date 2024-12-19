@@ -1019,14 +1019,17 @@ class VR:
                 for vm in self.vms:
                     if (str(vm.num) in vm_num_list) or not fcontent:
                         try:
-                            vm.qm.write("system_reset\r".encode())
+                            if vm.use_scrapli:
+                                vm.scrapli_qm.channel.write("system_reset\r")
+                            else:
+                                vm.qm.write("system_reset\r".encode())
                             self.logger.debug(f"Sent qemu-monitor system_reset to VM num {vm.num} ")
                         except Exception as e:
-                            self.logger.debug(f"Failed to send qemu-monitor system_reset to VM num {vm.num} ({e})")
+                            self.logger.error(f"Failed to send qemu-monitor system_reset to VM num {vm.num} ({e})")
                 try:
                     os.remove('/reset')
                 except Exception as e:
-                    self.logger.debug(f"Failed to cleanup /reset file({e}). qemu-monitor system_reset will likely be triggered again on VMs")
+                    self.logger.error(f"Failed to cleanup /reset file({e}). qemu-monitor system_reset will likely be triggered again on VMs")
 
 class QemuBroken(Exception):
     """Our Qemu instance is somehow broken"""
