@@ -22,6 +22,13 @@ except ImportError:
 
 MAX_RETRIES = 60
 
+# set fancy logging colours
+logging.addLevelName( logging.INFO, f"\x1B[1;32m\t{logging.getLevelName(logging.INFO)}\x1B[0m")
+logging.addLevelName( logging.WARN, f"\x1B[1;38;5;220m\t{logging.getLevelName(logging.WARN)}\x1B[0m")
+logging.addLevelName( logging.DEBUG, f"\x1B[1;94m\t{logging.getLevelName(logging.DEBUG)}\x1B[0m")
+logging.addLevelName( logging.ERROR, f"\x1B[1;91m\t{logging.getLevelName(logging.ERROR)}\x1B[0m")
+logging.addLevelName( logging.CRITICAL, f"\x1B[1;91m\t{logging.getLevelName(logging.CRITICAL)}\x1B[0m")
+
 
 def gen_mac(last_octet=None):
     """Generate a random MAC address that is in recognizable (0C:00) OUI space
@@ -94,13 +101,6 @@ class VM:
         
         # configure logging
         self.logger = logging.getLogger()
-        
-        # set fancy logging colours
-        logging.addLevelName( logging.INFO, f"\x1B[1;32m\t{logging.getLevelName(logging.INFO)}\x1B[0m")
-        logging.addLevelName( logging.WARN, f"\x1B[1;38;5;220m\t{logging.getLevelName(logging.WARN)}\x1B[0m")
-        logging.addLevelName( logging.DEBUG, f"\x1B[1;94m\t{logging.getLevelName(logging.DEBUG)}\x1B[0m")
-        logging.addLevelName( logging.ERROR, f"\x1B[1;91m\t{logging.getLevelName(logging.ERROR)}\x1B[0m")
-        logging.addLevelName( logging.CRITICAL, f"\x1B[1;91m\t{logging.getLevelName(logging.CRITICAL)}\x1B[0m")
         
         """
         Configure Scrapli logger to only be INFO level.
