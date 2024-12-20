@@ -281,8 +281,8 @@ class VM:
         self.logger.info(f"Launching {self.__class__.__name__} with {self.smp} SMP/VCPU and {self.ram} M of RAM")
         
         # give nice colours. Red if disabled, Green if enabled
-        mgmt_passthrough_coloured = f"\x1B[32mEnabled\x1B[0m" if self.mgmt_passthrough else f"\x1B[31mDisabled\x1B[0m"
-        use_scrapli_coloured = f"\x1B[32mEnabled\x1B[0m" if self.use_scrapli else f"\x1B[31mDisabled\x1B[0m"
+        mgmt_passthrough_coloured = format_bool_color(self.mgmt_passthrough, "Enabled", "Disabled")
+        use_scrapli_coloured = format_bool_color(self.use_scrapli, "Enabled", "Disabled")
 
         self.logger.info(f"Scrapli: {use_scrapli_coloured}")
         self.logger.info(f"Transparent mgmt interface: {mgmt_passthrough_coloured}")
@@ -1056,3 +1056,14 @@ def cidr_to_ddn(prefix: str) -> list[str]:
 
     network = ipaddress.IPv4Interface(prefix)
     return [str(network.ip), str(network.netmask)]
+
+def format_bool_color(bool_var: bool, text_if_true: str, text_if_false: str) -> str:
+    """
+    Generate a ANSI escape code colored string based on a boolean.
+    
+    Args:
+    bool_var:       Boolean to be evaluated
+    text_if_true:   Text returned if bool_var is true -- ANSI Formatted in green color
+    text_if_false:  Text returned if bool_var is false -- ANSI Formatted in red color
+    """
+    return f"\x1B[32m{text_if_true}\x1B[0m" if bool_var else f"\x1B[31m{text_if_false}\x1B[0m"
