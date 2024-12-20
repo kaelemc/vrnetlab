@@ -205,6 +205,7 @@ ip ssh server algorithm mac hmac-sha2-512
         con.commandeer(conn=self.scrapli_tn)
         
         res = con.send_configs_from_file(STARTUP_CONFIG_FILE)
+        res += con.send_commands(["write memory"], eager=True)
     
         for response in res:
             self.logger.info(f"CONFIG:{response.channel_input}")

@@ -218,7 +218,7 @@ xml agent tty
         
         with IOSXRDriver(**xrv9k_scrapli_dev) as con:
             res = con.send_configs(xrv9k_config.splitlines())
-            con.send_configs(["commit best-effort label CLAB_BOOTSTRAP", "end"], eager=True)
+            res += con.send_configs(["commit best-effort label CLAB_BOOTSTRAP", "end"], eager=True)
     
             for response in res:
                 self.logger.info(f"CONFIG:{response.channel_input}")
