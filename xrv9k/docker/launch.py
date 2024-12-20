@@ -204,7 +204,7 @@ grpc vrf clab-mgmt
 grpc no-tls
 !
 xml agent tty
-!
+root
 """
         
         if os.path.exists(STARTUP_CONFIG_FILE):

@@ -176,7 +176,7 @@ grpc vrf clab-mgmt
 grpc no-tls
 !
 xml agent tty
-!
+root
 """
 
         con = IOSXRDriver(**xrv_scrapli_dev)
