@@ -20,9 +20,10 @@ RUN apt-get update -qy \
    telnet \
    python3-pip \
    python3-passlib \
+   git \
    dosfstools \
    genisoimage \
    && rm -rf /var/lib/apt/lists/*
 
-RUN pip install https://github.com/carlmontanari/scrapli/archive/refs/tags/2024.07.30.post1.zip \
-   https://github.com/scrapli/scrapli_community/archive/refs/tags/2024.07.30.zip --break-system-packages
+RUN pip install https://github.com/carlmontanari/scrapli/archive/refs/tags/2024.07.30.post1.zip --break-system-packages
+RUN pip install -e git+https://github.com/kaelemc/scrapli_community.git@sros_regex_fix#egg=scrapli_community --break-system-packages
