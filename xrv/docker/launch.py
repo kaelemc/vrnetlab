@@ -198,7 +198,7 @@ root
         )
 
         res = con.send_configs(xrv_config.splitlines())
-        res += con.send_configs(["commit best-effort label CLAB_BOOTSTRAP", "end"], eager=True)
+        res += con.send_configs(["commit best-effort label CLAB_BOOTSTRAP", "end"])
     
         for response in res:
             self.logger.info(f"CONFIG:{response.channel_input}")

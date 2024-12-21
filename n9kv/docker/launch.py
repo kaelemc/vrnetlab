@@ -180,7 +180,7 @@ feature grpc
             self.logger.warning(f"User provided startup configuration is not found.")
 
         res = con.send_configs(n9kv_config.splitlines())
-        con.send_config("copy running-config startup-config", eager=True)
+        con.send_config("copy running-config startup-config")
     
         for response in res:
             self.logger.info(f"CONFIG:{response.channel_input}")

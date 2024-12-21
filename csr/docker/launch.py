@@ -215,7 +215,7 @@ netconf-yang
             self.logger.warning(f"User provided startup configuration is not found.")
 
         res = con.send_configs(csr_config.splitlines())
-        res += con.send_commands(["write memory"], eager=True)
+        res += con.send_commands(["write memory"])
     
         for response in res:
             self.logger.info(f"CONFIG:{response.channel_input}")
