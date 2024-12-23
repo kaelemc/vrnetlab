@@ -9,7 +9,6 @@ import subprocess
 import sys
 
 import vrnetlab
-from scrapli.driver.core import IOSXEDriver
 
 STARTUP_CONFIG_FILE = "/config/startup-config.cfg"
 DEFAULT_SCRAPLI_TIMEOUT = 900
@@ -59,112 +58,59 @@ class C8000v_vm(vrnetlab.VM):
         self.conn_mode = conn_mode
         self.num_nics = 9
         self.nic_type = "virtio-net-pci"
+        self.image_name = "config.iso"
 
         if self.install_mode:
             self.logger.debug("Install mode")
-            self.image_name = "config.iso"
-            self.create_boot_image()
+            self.create_config_image(self.gen_install_config())
+        else:
+            cfg = self.gen_bootstrap_config()
+            if os.path.exists(STARTUP_CONFIG_FILE):
+                self.logger.info("Startup configuration file found")
+                with open (STARTUP_CONFIG_FILE, "r") as startup_config:
+                    cfg += startup_config.read()
+            else:
+                self.logger.warning(f"User provided startup configuration is not found.")
+            self.create_config_image(cfg)
 
-            self.qemu_args.extend(["-cdrom", "/" + self.image_name])
+        self.qemu_args.extend(["-cdrom", "/" + self.image_name])
 
-    def create_boot_image(self):
-        """Creates a iso image with a bootstrap configuration"""
-
-        with open("/iosxe_config.txt", "w") as cfg_file:
-            if self.license:
-                cfg_file.write("do clock set 13:33:37 1 Jan 2010\r\n")
-                cfg_file.write("interface GigabitEthernet1\r\n")
-                cfg_file.write("ip address 10.0.0.15 255.255.255.0\r\n")
-                cfg_file.write("no shut\r\n")
-                cfg_file.write("exit\r\n")
-                cfg_file.write("license accept end user agreement\r\n")
-                cfg_file.write("yes\r\n")
-                cfg_file.write("do license install tftp://10.0.0.2/license.lic\r\n\r\n")
-            cfg_file.write("license boot level network-premier addon dna-premier\r\n")
-            cfg_file.write("platform console serial\r\n\r\n")
-            cfg_file.write("do clear platform software vnic-if nvtable\r\n")
-            cfg_file.write("do wr\r\n")
-            cfg_file.write("do reload\r\n")
-
-        genisoimage_args = [
-            "genisoimage",
-            "-l",
-            "-o",
-            "/" + self.image_name,
-            "/iosxe_config.txt",
-        ]
-
-        subprocess.Popen(genisoimage_args)
-
-    def bootstrap_spin(self):
-        """This function should be called periodically to do work."""
-
-        if self.spins > 300:
-            # too many spins with no result ->  give up
-            self.stop()
-            self.start()
-            return
-
-        (ridx, match, res) = self.con_expect(
-            [b"Press RETURN to get started!", b"IOSXEBOOT-4-FACTORY_RESET"]
-        )
-        if match:  # got a match!
-            if ridx == 0:  # login
-                self.logger.info("matched, Press RETURN to get started.")
-                if self.install_mode:
-                    self.logger.info("Now we wait for the device to reload")
-                else:
-                    self.wait_write("", wait=None)
-                    
-                    self.apply_config()
-                    
-                    # close telnet connection
-                    self.scrapli_tn.close()
-                    
-                    # startup time?
-                    startup_time = datetime.datetime.now() - self.start_time
-                    self.logger.info("Startup complete in: %s", startup_time)
-                    self.running = True
-                    
-                    return
-            elif ridx == 1:  # IOSXEBOOT-4-FACTORY_RESET
-                if self.install_mode:
-                    install_time = datetime.datetime.now() - self.start_time
-                    self.logger.info("Install complete in: %s", install_time)
-                    self.running = True
-                    return
-                else:
-                    self.logger.warning("Unexpected reload while running")
-
-        # no match, if we saw some output from the router it's probably
-        # booting, so let's give it some more time
-        if res != b"":
-            self.write_to_stdout(res)
-            # reset spins if we saw some output
-            self.spins = 0
-
-        self.spins += 1
-
-        return
-
-    def apply_config(self):
+    def gen_install_config(self) -> str:
+        """
+        Returns the configuration to load in install mode
+        """
         
-        scrapli_timeout = os.getenv("SCRAPLI_TIMEOUT", DEFAULT_SCRAPLI_TIMEOUT)
-        self.logger.info(f"Scrapli timeout is {scrapli_timeout}s (default {DEFAULT_SCRAPLI_TIMEOUT}s)")
+        config = ""
         
-        # init scrapli
-        cat8kv_scrapli_dev = {
-            "host": "127.0.0.1",
-            "auth_bypass": True,
-            "auth_strict_key": False,
-            "timeout_socket": scrapli_timeout,
-            "timeout_transport": scrapli_timeout,
-            "timeout_ops": scrapli_timeout,
-        }
+        if self.license:
+            config += """do clock set 13:33:37 1 Jan 2010
+interface GigabitEthernet1
+ip address 10.0.0.15 255.255.255.0
+no shut
+exit
+license accept end user agreement
+yes
+do license install tftp://10.0.0.2/license.lic
+"""
+        
+        config += """
+license boot level network-premier addon dna-premier
+platform console serial
+do clear platform software vnic-if nvtable
+do wr
+do reload
+"""
+
+        return config
+
+    def gen_bootstrap_config(self) -> str:
+        """
+        Returns the system bootstrap configuration
+        """
         
         v4_mgmt_address = vrnetlab.cidr_to_ddn(self.mgmt_address_ipv4)
                 
-        cat8kv_config = f"""hostname {self.hostname}
+        return f"""hostname {self.hostname}
 username {self.username} privilege 15 password {self.password}
 ip domain name example.com
 !
@@ -209,23 +155,64 @@ ip ssh maxstartups 128
 !
 """
 
-        con = IOSXEDriver(**cat8kv_scrapli_dev)
-        con.commandeer(conn=self.scrapli_tn)
+    def create_config_image(self, config):
+        """Creates a iso image with a installation configuration"""
+
+        with open("/iosxe_config.txt", "w") as cfg:
+            cfg.write(config)
+
+        genisoimage_args = [
+            "genisoimage",
+            "-l",
+            "-o",
+            "/" + self.image_name,
+            "/iosxe_config.txt",
+        ]
+
+        subprocess.Popen(genisoimage_args)
+
+    def bootstrap_spin(self):
+        """This function should be called periodically to do work."""
+
+        if self.spins > 300:
+            # too many spins with no result ->  give up
+            self.stop()
+            self.start()
+            return
         
-        if os.path.exists(STARTUP_CONFIG_FILE):
-            self.logger.info("Startup configuration file found")
-            with open(STARTUP_CONFIG_FILE, "r") as config:
-                cat8kv_config += config.read()
-        else:
-            self.logger.warning(f"User provided startup configuration is not found.")
+        (ridx, match, res) = self.con_expect(
+            [b"CVAC-4-CONFIG_DONE", b"IOSXEBOOT-4-FACTORY_RESET"]
+        )
+        if match:  # got a match!
+            if ridx == 0 and not self.install_mode:   # configuration applied
+                self.logger.info("CVAC Configuration has been applied.")
+                # close telnet connection
+                self.scrapli_tn.close()
+                # startup time?
+                startup_time = datetime.datetime.now() - self.start_time
+                self.logger.info("Startup complete in: %s", startup_time)
+                # mark as running
+                self.running = True
+                return
+            elif ridx == 1:  # IOSXEBOOT-4-FACTORY_RESET
+                if self.install_mode:
+                    install_time = datetime.datetime.now() - self.start_time
+                    self.logger.info("Install complete in: %s", install_time)
+                    self.running = True
+                    return
+                else:
+                    self.logger.warning("Unexpected reload while running")
 
-        res = con.send_configs(cat8kv_config.splitlines())
-        res += con.send_commands(["write memory"])
+        # no match, if we saw some output from the router it's probably
+        # booting, so let's give it some more time
+        if res != b"":
+            self.write_to_stdout(res)
+            # reset spins if we saw some output
+            self.spins = 0
 
-        for response in res:
-            self.logger.info(f"CONFIG:{response.channel_input}")
-            self.logger.info(f"RESULT:{response.result}")
+        self.spins += 1
 
+        return
 
 class C8000v(vrnetlab.VR):
     def __init__(self, hostname, username, password, conn_mode):
