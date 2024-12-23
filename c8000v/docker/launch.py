@@ -168,8 +168,9 @@ ip ssh maxstartups 128
             "/" + self.image_name,
             "/iosxe_config.txt",
         ]
-
-        subprocess.Popen(genisoimage_args)
+        
+        self.logger.debug("Generating boot ISO")
+        subprocess.Popen(genisoimage_args).wait()
 
     def bootstrap_spin(self):
         """This function should be called periodically to do work."""
