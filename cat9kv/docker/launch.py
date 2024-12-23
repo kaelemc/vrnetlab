@@ -9,7 +9,6 @@ import subprocess
 import sys
 
 import vrnetlab
-from scrapli.driver.core import IOSXEDriver
 
 STARTUP_CONFIG_FILE = "/config/startup-config.cfg"
 DEFAULT_SCRAPLI_TIMEOUT = 900
@@ -103,8 +102,6 @@ logging synchronous
 login local
 transport input all
 !
-ipv6 unicast-routing
-!
 ip route vrf Mgmt-vrf 0.0.0.0 0.0.0.0 {self.mgmt_gw_ipv4}
 ipv6 route vrf Mgmt-vrf ::/0 {self.mgmt_gw_ipv6}
 !
@@ -124,6 +121,13 @@ ip ssh server algorithm mac hmac-sha2-512
 !
 """
 
+        if os.path.exists(STARTUP_CONFIG_FILE):
+            self.logger.info("Startup configuration file found")
+            with open (STARTUP_CONFIG_FILE, "r") as startup_config:
+                cat9kv_config += startup_config.read()
+        else:
+            self.logger.warning(f"User provided startup configuration is not found.")
+
         with open("/img_dir/iosxe_config.txt", "w") as cfg_file:
             cfg_file.write(cat9kv_config)
 
@@ -136,7 +140,7 @@ ip ssh server algorithm mac hmac-sha2-512
         ]
 
         self.logger.debug("Generating boot ISO")
-        subprocess.Popen(genisoimage_args)
+        subprocess.Popen(genisoimage_args).wait()
 
     def bootstrap_spin(self):
         """This function should be called periodically to do work."""
@@ -149,21 +153,13 @@ ip ssh server algorithm mac hmac-sha2-512
 
         (ridx, match, res) = self.con_expect(
             [
-                b"Press RETURN to get started!",
+                b"CVAC-4-CONFIG_DONE",
                 b"IOSXEBOOT-4-FACTORY_RESET",
             ],
         )
         if match:  # got a match!
-            if ridx == 0:  # login
-                self.logger.debug("matched, Press RETURN to get started.")
-                
-                if os.path.exists(STARTUP_CONFIG_FILE):
-                    self.logger.info("Startup configuration file found. Applying startup config.")
-                    self.wait_write("", wait=None)
-                    self.apply_startup_config()
-                else:
-                    self.logger.warning(f"User provided startup configuration is not found.")
-                
+            if ridx == 0:   # configuration applied
+                self.logger.info("CVAC Configuration has been applied.")
                 # close telnet connection
                 self.scrapli_tn.close()
                 # startup time?
@@ -185,32 +181,6 @@ ip ssh server algorithm mac hmac-sha2-512
         self.spins += 1
 
         return
-
-    def apply_startup_config(self):  
-        
-        scrapli_timeout = os.getenv("SCRAPLI_TIMEOUT", DEFAULT_SCRAPLI_TIMEOUT)
-        self.logger.info(f"Scrapli timeout is {scrapli_timeout}s (default {DEFAULT_SCRAPLI_TIMEOUT}s)")
-        
-        # init scrapli
-        cat9kv_scrapli_dev = {
-            "host": "127.0.0.1",
-            "auth_bypass": True,
-            "auth_strict_key": False,
-            "timeout_socket": scrapli_timeout,
-            "timeout_transport": scrapli_timeout,
-            "timeout_ops": scrapli_timeout,
-        }
-
-        con = IOSXEDriver(**cat9kv_scrapli_dev)
-        con.commandeer(conn=self.scrapli_tn)
-        
-        res = con.send_configs_from_file(STARTUP_CONFIG_FILE)
-        res += con.send_commands(["write memory"])
-    
-        for response in res:
-            self.logger.info(f"CONFIG:{response.channel_input}")
-            self.logger.info(f"RESULT:{response.result}")
-
 
 class cat9kv(vrnetlab.VR):
     def __init__(self, hostname, username, password, conn_mode, vcpu, ram):
