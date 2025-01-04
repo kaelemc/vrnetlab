@@ -1163,7 +1163,7 @@ class SROS_vm(vrnetlab.VM):
         """Switch configuration engine"""
         if SROS_VERSION.major <= 22 or SROS_VERSION.magc:
             # for SR OS version <= 22, we enforce MD-CLI by switching to it
-            res = self.sros_con.send_confgs(
+            res = self.sros_con.send_configs(
                 [
                     f"/configure system management-interface configuration-mode {self.mode}"
                 ], strip_prompt=False
@@ -1261,7 +1261,7 @@ class SROS_vm(vrnetlab.VM):
         }
         
         if SROS_VERSION.major <= 22 or SROS_VERSION.magc:
-            sros_scrapli_dev["variant"] = "cassic"
+            sros_scrapli_dev["variant"] = "classic"
         
         # self.scrapli_logger.setLevel(logging.DEBUG)        
         self.sros_con = Scrapli(**sros_scrapli_dev)
