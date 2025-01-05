@@ -7,13 +7,11 @@ import re
 import signal
 import subprocess
 import sys
-import time
+from time import sleep
 
 import vrnetlab
-from scrapli.driver.core import IOSXEDriver
 
 STARTUP_CONFIG_FILE = "/config/startup-config.cfg"
-DEFAULT_SCRAPLI_TIMEOUT = 900
 
 def handle_SIGCHLD(signal, frame):
     os.waitpid(-1, os.WNOHANG)
@@ -63,108 +61,60 @@ class CSR_vm(vrnetlab.VM):
         self.hostname = hostname
         self.conn_mode = conn_mode
         self.nic_type = "virtio-net-pci"
+        self.image_name = "config.iso"
 
         if self.install_mode:
-            self.logger.debug("install mode")
-            self.image_name = "config.iso"
-            self.create_boot_image()
+            self.logger.debug("Install mode")
+            self.create_config_image(self.gen_install_config())
+        else:
+            cfg = self.gen_bootstrap_config()
+            if os.path.exists(STARTUP_CONFIG_FILE):
+                self.logger.info("Startup configuration file found")
+                with open (STARTUP_CONFIG_FILE, "r") as startup_config:
+                    cfg += startup_config.read()
+            else:
+                self.logger.warning(f"User provided startup configuration is not found.")
+            self.create_config_image(cfg)
 
-            self.qemu_args.extend(["-cdrom", "/" + self.image_name])
-
-    def create_boot_image(self):
-        """Creates a iso image with a bootstrap configuration"""
-
-        cfg_file = open("/iosxe_config.txt", "w")
+        self.qemu_args.extend(["-cdrom", "/" + self.image_name])
+        
+    def gen_install_config(self) -> str:
+        """
+        Returns the configuration to load in install mode
+        """
+        
+        config = ""
+        
         if self.license:
-            cfg_file.write("do clock set 13:33:37 1 Jan 2010\r\n")
-            cfg_file.write("interface GigabitEthernet1\r\n")
-            cfg_file.write("ip address 10.0.0.15 255.255.255.0\r\n")
-            cfg_file.write("no shut\r\n")
-            cfg_file.write("exit\r\n")
-            cfg_file.write("license accept end user agreement\r\n")
-            cfg_file.write("yes\r\n")
-            cfg_file.write("do license install tftp://10.0.0.2/license.lic\r\n\r\n")
-
-        cfg_file.write("platform console serial\r\n\r\n")
-        cfg_file.write("do clear platform software vnic-if nvtable\r\n\r\n")
-        cfg_file.write("do wr\r\n")
-        cfg_file.write("do reload\r\n")
-        cfg_file.close()
-
-        genisoimage_args = [
-            "genisoimage",
-            "-l",
-            "-o",
-            "/" + self.image_name,
-            "/iosxe_config.txt",
-        ]
-
-        subprocess.Popen(genisoimage_args)
-
-    def bootstrap_spin(self):
-        """This function should be called periodically to do work."""
-
-        if self.spins > 600:
-            # too many spins with no result ->  give up
-            self.stop()
-            self.start()
-            return
-
-        (ridx, match, res) = self.con_expect([b"Press RETURN to get started!"], 1)
-        if match:  # got a match!
-            if ridx == 0:  # login
-                if self.install_mode:
-                    self.running = True
-                    return
-
-                self.logger.debug("matched, Press RETURN to get started.")
-                
-                self.wait_write("", wait=None)
-
-                self.apply_config()
-                
-                # close the telnet connection
-                self.scrapli_tn.close()
-                                
-                # startup time?
-                startup_time = datetime.datetime.now() - self.start_time
-                self.logger.info("Startup complete in: %s" % startup_time)
-                self.running = True
-                
-                return
-
-        # no match, if we saw some output from the router it's probably
-        # booting, so let's give it some more time
-        if res != b"":
-            self.write_to_stdout(res)
-            # reset spins if we saw some output
-            self.spins = 0
-
-        self.spins += 1
-
-        return
-
-
-    def apply_config(self):  
+            config += """do clock set 13:33:37 1 Jan 2010
+interface GigabitEthernet1
+ip address 10.0.0.15 255.255.255.0
+no shut
+exit
+license accept end user agreement
+yes
+do license install tftp://10.0.0.2/license.lic
+"""
         
-        scrapli_timeout = os.getenv("SCRAPLI_TIMEOUT", DEFAULT_SCRAPLI_TIMEOUT)
-        self.logger.info(f"Scrapli timeout is {scrapli_timeout}s (default {DEFAULT_SCRAPLI_TIMEOUT}s)")
-        
-        # init scrapli
-        csr_scrapli_dev = {
-            "host": "127.0.0.1",
-            "auth_bypass": True,
-            "auth_strict_key": False,
-            "timeout_socket": scrapli_timeout,
-            "timeout_transport": scrapli_timeout,
-            "timeout_ops": scrapli_timeout,
-        }
+        config += """
+platform console serial
+do clear platform software vnic-if nvtable
+do wr
+do reload
+"""
+
+        return config
+
+    def gen_bootstrap_config(self) -> str:
+        """
+        Returns the system bootstrap configuration
+        """
         
         v4_mgmt_address = vrnetlab.cidr_to_ddn(self.mgmt_address_ipv4)
         
         ip_domain_name = "ip domain name example.com" if int(self.version.split('.')[0]) >= 16 else "ip domain-name example.com"
                 
-        csr_config = f"""hostname {self.hostname}
+        return f"""hostname {self.hostname}
 username {self.username} privilege 15 password {self.password}
 {ip_domain_name}
 !
@@ -204,22 +154,63 @@ netconf-yang
 !
 """
 
-        con = IOSXEDriver(**csr_scrapli_dev)
-        con.commandeer(conn=self.scrapli_tn)
-        
-        if os.path.exists(STARTUP_CONFIG_FILE):
-            self.logger.info("Startup configuration file found")
-            with open(STARTUP_CONFIG_FILE, "r") as config:
-                csr_config += config.read()
-        else:
-            self.logger.warning(f"User provided startup configuration is not found.")
+    def create_config_image(self, config):
+        """Creates a iso image with a installation configuration"""
 
-        res = con.send_configs(csr_config.splitlines())
-        res += con.send_commands(["write memory"])
-    
-        for response in res:
-            self.logger.info(f"CONFIG:{response.channel_input}")
-            self.logger.info(f"RESULT:{response.result}")
+        with open("/iosxe_config.txt", "w") as cfg:
+            cfg.write(config)
+
+        genisoimage_args = [
+            "genisoimage",
+            "-l",
+            "-o",
+            "/" + self.image_name,
+            "/iosxe_config.txt",
+        ]
+        
+        self.logger.debug("Generating boot ISO")
+        subprocess.Popen(genisoimage_args).wait()
+
+    def bootstrap_spin(self):
+        """This function should be called periodically to do work."""
+
+        if self.spins > 600:
+            # too many spins with no result ->  give up
+            self.stop()
+            self.start()
+            return
+
+        (ridx, match, res) = self.con_expect(
+            [b"CVAC-4-CONFIG_DONE", b"Press RETURN to get started!"]
+        )
+        if match:  # got a match!
+            if ridx == 0 and not self.install_mode:   # configuration applied
+                self.logger.info("CVAC Configuration has been applied.")
+                # close telnet connection
+                self.scrapli_tn.close()
+                # startup time?
+                startup_time = datetime.datetime.now() - self.start_time
+                self.logger.info("Startup complete in: %s", startup_time)
+                # mark as running
+                self.running = True
+                return
+            elif ridx == 1:  # IOSXEBOOT-4-FACTORY_RESET
+                if self.install_mode:
+                    install_time = datetime.datetime.now() - self.start_time
+                    self.logger.info("Install complete in: %s", install_time)
+                    self.running = True
+                    return
+
+        # no match, if we saw some output from the router it's probably
+        # booting, so let's give it some more time
+        if res != b"":
+            self.write_to_stdout(res)
+            # reset spins if we saw some output
+            self.spins = 0
+
+        self.spins += 1
+
+        return
 
 
 class CSR(vrnetlab.VR):
@@ -253,10 +244,9 @@ class CSR_installer(CSR):
         csr = self.vms[0]
         while not csr.running:
             csr.work()
-        time.sleep(30)
+        sleep(30)
         csr.stop()
         self.logger.info("Installation complete")
-
 
 if __name__ == "__main__":
     import argparse
