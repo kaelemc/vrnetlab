@@ -2,6 +2,21 @@ version = 1
 requires-python = ">=3.11"
 
 [[package]]
+name = "scrapli"
+version = "2024.7.30.post1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/85/1b/27dd7f93b72e49222fc26bde23f720c24e3779bc6946b46d7977150b67a2/scrapli-2024.7.30.post1.tar.gz", hash = "sha256:4a7b862ff66c1fabba5f0c5673cc5c46a46e24e0ebf19c37a56c398cbc3ccfde", size = 104341 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/0e/4d/af60aaf236f738dae6bf7daec613b9efa241a56d0822afde25f0e1463a5a/scrapli-2024.7.30.post1-py3-none-any.whl", hash = "sha256:59b96836f38d27498b141f6153ae0e169a5c806480f5e1f24cbb37ea74021e6f", size = 145809 },
+]
+
+[[package]]
 name = "vrnetlab"
 version = "0.1.0"
 source = { virtual = "." }
+dependencies = [
+    { name = "scrapli" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "scrapli", specifier = ">=2024.7.30.post1" }]
