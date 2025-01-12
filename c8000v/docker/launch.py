@@ -11,7 +11,6 @@ import sys
 import vrnetlab
 
 STARTUP_CONFIG_FILE = "/config/startup-config.cfg"
-DEFAULT_SCRAPLI_TIMEOUT = 900
 
 
 def handle_SIGCHLD(signal, frame):

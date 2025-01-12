@@ -14,7 +14,6 @@ import vrnetlab
 from scrapli.driver.core import IOSXRDriver
 
 STARTUP_CONFIG_FILE = "/config/startup-config.cfg"
-DEFAULT_SCRAPLI_TIMEOUT = 900
 
 
 def handle_SIGCHLD(signal, frame):
@@ -126,9 +125,9 @@ class XRV_vm(vrnetlab.VM):
         return
 
     def apply_config(self):
-        scrapli_timeout = os.getenv("SCRAPLI_TIMEOUT", DEFAULT_SCRAPLI_TIMEOUT)
+        scrapli_timeout = os.getenv("SCRAPLI_TIMEOUT", vrnetlab.DEFAULT_SCRAPLI_TIMEOUT)
         self.logger.info(
-            f"Scrapli timeout is {scrapli_timeout}s (default {DEFAULT_SCRAPLI_TIMEOUT}s)"
+            f"Scrapli timeout is {scrapli_timeout}s (default {vrnetlab.DEFAULT_SCRAPLI_TIMEOUT}s)"
         )
 
         # init scrapli

@@ -10,7 +10,6 @@ import vrnetlab
 from scrapli.driver.core import IOSXEDriver
 
 STARTUP_CONFIG_FILE = "/config/startup-config.cfg"
-DEFAULT_SCRAPLI_TIMEOUT = 900
 
 
 def handle_SIGCHLD(_signal, _frame):

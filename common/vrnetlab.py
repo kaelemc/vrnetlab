@@ -21,6 +21,8 @@ except ImportError:
 
 MAX_RETRIES = 60
 
+DEFAULT_SCRAPLI_TIMEOUT = 900
+
 # set fancy logging colours
 logging.addLevelName(
     logging.INFO, f"\x1b[1;32m\t{logging.getLevelName(logging.INFO)}\x1b[0m"
