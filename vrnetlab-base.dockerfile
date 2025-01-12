@@ -1,14 +1,15 @@
 FROM public.ecr.aws/docker/library/debian:bookworm-slim
 LABEL org.opencontainers.image.authors="roman@dodin.dev"
 
+COPY --from=ghcr.io/astral-sh/uv:0.5.18 /uv /uvx /bin/
+
 ARG DEBIAN_FRONTEND=noninteractive
+
 RUN apt-get update -qy \
    && apt-get install -y --no-install-recommends \
+   ca-certificates \
    bridge-utils \
    iproute2 \
-   python3 \
-   python3-pip \
-   python3-passlib \
    socat \
    qemu-kvm \
    qemu-utils \
@@ -25,5 +26,13 @@ RUN apt-get update -qy \
    genisoimage \
    && rm -rf /var/lib/apt/lists/*
 
-RUN pip install https://github.com/carlmontanari/scrapli/archive/refs/tags/2024.07.30.post1.zip --break-system-packages
-RUN pip install git+https://github.com/scrapli/scrapli_community@d862833 --break-system-packages
+# copying the uv project
+COPY pyproject.toml /pyproject.toml
+COPY uv.lock /uv.lock
+RUN /bin/uv sync --frozen
+
+# copy core vrnetlab scripts
+COPY ./common/healthcheck.py ./common/vrnetlab.py /
+
+HEALTHCHECK CMD ["uv", "run", "/healthcheck.py"]
+ENTRYPOINT ["uv", "run", "/launch.py"]
