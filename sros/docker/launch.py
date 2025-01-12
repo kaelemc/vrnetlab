@@ -16,6 +16,7 @@ from scrapli import Scrapli
 DEFAULT_SCRAPLI_TIMEOUT = 900
 DEBUG_SCRAPLI = True if os.getenv("DEBUG_SCRAPLI", "false").lower() == "true" else False
 
+
 def handle_SIGCHLD(signal, frame):
     os.waitpid(-1, os.WNOHANG)
 
@@ -914,7 +915,7 @@ class SROS_vm(vrnetlab.VM):
             ram=ram,
             driveif="virtio",
             smp=f"{cpu}",
-            use_scrapli=True
+            use_scrapli=True,
         )
 
         self.nic_type = "virtio-net-pci"
@@ -1094,10 +1095,20 @@ class SROS_vm(vrnetlab.VM):
             power_path = "system"
 
         for s in range(1, shelves + 1):
-            res = self.sros_con.send_configs([f"/configure {power_path} power-shelf {s} power-shelf-type {power_shelf_type}"], strip_prompt=False)
+            res = self.sros_con.send_configs(
+                [
+                    f"/configure {power_path} power-shelf {s} power-shelf-type {power_shelf_type}"
+                ],
+                strip_prompt=False,
+            )
             self.log_scrapli_cmd_res(res)
             for m in range(1, modules + 1):
-                res = self.sros_con.send_configs([f"/configure {power_path} power-shelf {s} power-module {m} power-module-type {module_type}"], strip_prompt=False)
+                res = self.sros_con.send_configs(
+                    [
+                        f"/configure {power_path} power-shelf {s} power-module {m} power-module-type {module_type}"
+                    ],
+                    strip_prompt=False,
+                )
                 self.log_scrapli_cmd_res(res)
 
     def enterConfig(self):
@@ -1110,40 +1121,40 @@ class SROS_vm(vrnetlab.VM):
         """Enter bof configuration mode. No-op for SR OS version <= 22"""
         if SROS_VERSION.major <= 22 or SROS_VERSION.magc:
             return
-        res = self.sros_con.send_commands(["edit-config bof exclusive"], strip_prompt=False)
+        res = self.sros_con.send_commands(
+            ["edit-config bof exclusive"], strip_prompt=False
+        )
         self.log_scrapli_cmd_res(res)
 
     def commitConfig(self):
         """Commit configuration. No-op for SR OS version <= 22"""
         if SROS_VERSION.major <= 22 or SROS_VERSION.magc:
             return
-        res = self.sros_con.send_configs([
-                "commit",
-                "/"
-            ], strip_prompt=False)
+        res = self.sros_con.send_configs(["commit", "/"], strip_prompt=False)
         self.log_scrapli_cmd_res(res)
 
     def commitBofConfig(self):
         """Commit configuration. No-op for SR OS version <= 22"""
         if SROS_VERSION.major <= 22 or SROS_VERSION.magc:
             return
-        res = self.sros_con.send_configs([
-            "commit",
-            "/"
-        ], strip_prompt=False)
+        res = self.sros_con.send_configs(["commit", "/"], strip_prompt=False)
         self.log_scrapli_cmd_res(res)
 
     def configureCards(self):
         """Configure cards"""
         # integrated vsims have `card_config` in the variant definition
         if "card_config" in self.variant:
-            res = self.sros_con.send_configs(self.variant["card_config"].splitlines(), strip_prompt=False)
+            res = self.sros_con.send_configs(
+                self.variant["card_config"].splitlines(), strip_prompt=False
+            )
             self.log_scrapli_cmd_res(res)
         # else this might be a distributed chassis
         elif self.variant.get("lcs") is not None:
             for lc in self.variant["lcs"]:
                 if "card_config" in lc:
-                    res = self.sros_con.send_configs(lc["card_config"].splitlines(), strip_prompt=False)
+                    res = self.sros_con.send_configs(
+                        lc["card_config"].splitlines(), strip_prompt=False
+                    )
                     self.log_scrapli_cmd_res(res)
 
     def persistBofAndConfig(self):
@@ -1166,7 +1177,8 @@ class SROS_vm(vrnetlab.VM):
             res = self.sros_con.send_configs(
                 [
                     f"/configure system management-interface configuration-mode {self.mode}"
-                ], strip_prompt=False
+                ],
+                strip_prompt=False,
             )
             self.log_scrapli_cmd_res(res)
 
@@ -1205,26 +1217,26 @@ class SROS_vm(vrnetlab.VM):
             else:
                 if SROS_VERSION.major >= 23 and not SROS_VERSION.magc:
                     cmds.append(
-                        f'/bof router static-routes route {os.getenv("DOCKER_NET_V4_ADDR")} next-hop {BRIDGE_V4_ADDR}'
+                        f"/bof router static-routes route {os.getenv('DOCKER_NET_V4_ADDR')} next-hop {BRIDGE_V4_ADDR}"
                     )
                 else:
                     cmds.append(
-                        f'/bof static-route {os.getenv("DOCKER_NET_V4_ADDR")} next-hop {BRIDGE_V4_ADDR}'
+                        f"/bof static-route {os.getenv('DOCKER_NET_V4_ADDR')} next-hop {BRIDGE_V4_ADDR}"
                     )
         if "DOCKER_NET_V6_ADDR" in os.environ and os.getenv("DOCKER_NET_V6_ADDR") != "":
             if not self.mgmt_passthrough:
                 if SROS_VERSION.major >= 23 and not SROS_VERSION.magc:
                     cmds.append(
-                        f'/bof router static-routes route {os.getenv("DOCKER_NET_V6_ADDR")} next-hop {BRIDGE_V6_ADDR}'
+                        f"/bof router static-routes route {os.getenv('DOCKER_NET_V6_ADDR')} next-hop {BRIDGE_V6_ADDR}"
                     )
                 else:
                     cmds.append(
-                        f'/bof static-route {os.getenv("DOCKER_NET_V6_ADDR")} next-hop {BRIDGE_V6_ADDR}'
+                        f"/bof static-route {os.getenv('DOCKER_NET_V6_ADDR')} next-hop {BRIDGE_V6_ADDR}"
                     )
         # if "docker-net-v6-addr" in m:
         #     cmds.append(f"/bof static-route {m[docker-net-v6-addr]} next-hop {BRIDGE_ADDR}")
         return cmds
-    
+
     def log_scrapli_cmd_res(self, res: list):
         if not DEBUG_SCRAPLI:
             return
@@ -1239,16 +1251,20 @@ class SROS_vm(vrnetlab.VM):
         # configure bof before we check if config file was provided
         # since bof statements are not part of the config file
         # thus it must be applied unconditionally
-        
+
         # init scrapli sros driver
         scrapli_timeout = os.getenv("SCRAPLI_TIMEOUT", DEFAULT_SCRAPLI_TIMEOUT)
-        self.logger.info(f"Scrapli timeout is {scrapli_timeout}s (default {DEFAULT_SCRAPLI_TIMEOUT}s)")
-        
-        # check if config was provided  
+        self.logger.info(
+            f"Scrapli timeout is {scrapli_timeout}s (default {DEFAULT_SCRAPLI_TIMEOUT}s)"
+        )
+
+        # check if config was provided
         config_exists = os.path.isfile("/tftpboot/config.txt")
-        fmt_config_exists = vrnetlab.format_bool_color(config_exists, "exists", "does not exist")
+        fmt_config_exists = vrnetlab.format_bool_color(
+            config_exists, "exists", "does not exist"
+        )
         self.logger.debug(f"Configuration file {fmt_config_exists}")
-        
+
         # init scrapli
         sros_scrapli_dev = {
             "platform": "nokia_sros",
@@ -1259,21 +1275,21 @@ class SROS_vm(vrnetlab.VM):
             "timeout_transport": scrapli_timeout,
             "timeout_ops": scrapli_timeout,
         }
-        
+
         if SROS_VERSION.major <= 22 or SROS_VERSION.magc:
             sros_scrapli_dev["variant"] = "classic"
-        
-        # self.scrapli_logger.setLevel(logging.DEBUG)        
+
+        # self.scrapli_logger.setLevel(logging.DEBUG)
         self.sros_con = Scrapli(**sros_scrapli_dev)
         self.sros_con.commandeer(conn=self.scrapli_tn)
-        
+
         # configure BOF
         self.enterBofConfig()
-        
+
         # send and log BOF config
         res = self.sros_con.send_configs(self.gen_bof_config(), strip_prompt=False)
         self.log_scrapli_cmd_res(res)
-        
+
         self.commitBofConfig()
         # save bof config on disk
         self.persistBofAndConfig()
@@ -1284,8 +1300,11 @@ class SROS_vm(vrnetlab.VM):
 
             # enter config mode, no-op for sros <=22
             self.enterConfig()
-            
-            res = self.sros_con.send_configs(getDefaultConfig().format(name=self.hostname).splitlines(), strip_prompt=False)
+
+            res = self.sros_con.send_configs(
+                getDefaultConfig().format(name=self.hostname).splitlines(),
+                strip_prompt=False,
+            )
             self.log_scrapli_cmd_res(res)
 
             # configure card/mda of a given variant
@@ -1298,7 +1317,6 @@ class SROS_vm(vrnetlab.VM):
             self.commitConfig()
 
             self.switchConfigEngine()
-    
 
     @property
     def ram(self):
@@ -1947,5 +1965,7 @@ if __name__ == "__main__":
         conn_mode=args.connection_mode,
         mgmt_passthrough=mgmt_passthrough,
     )
-    ia.logger.debug(f"acting flags: username '{args.username}', password '{args.password}', connection-mode '{args.connection_mode}', variant '{args.variant}'")
+    ia.logger.debug(
+        f"acting flags: username '{args.username}', password '{args.password}', connection-mode '{args.connection_mode}', variant '{args.variant}'"
+    )
     ia.start()
