@@ -1,4 +1,4 @@
-FROM ghcr.io/srl-labs/vrnetlab-base:0.0.1
+FROM ghcr.io/srl-labs/vrnetlab-base:0.1.0
 
 ARG IMAGE
 COPY $IMAGE* /

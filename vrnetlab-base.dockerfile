@@ -7,6 +7,8 @@ RUN apt-get update -qy \
    bridge-utils \
    iproute2 \
    python3 \
+   python3-pip \
+   python3-passlib \
    socat \
    qemu-kvm \
    qemu-utils \
@@ -18,12 +20,10 @@ RUN apt-get update -qy \
    iptables \
    nftables \
    telnet \
-   python3-pip \
-   python3-passlib \
    git \
    dosfstools \
    genisoimage \
    && rm -rf /var/lib/apt/lists/*
 
 RUN pip install https://github.com/carlmontanari/scrapli/archive/refs/tags/2024.07.30.post1.zip --break-system-packages
-RUN pip install git+https://github.com/scrapli/scrapli_community --break-system-packages
+RUN pip install git+https://github.com/scrapli/scrapli_community@d862833 --break-system-packages
