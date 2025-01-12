@@ -8,12 +8,12 @@ import signal
 import sys
 import time
 
-
 import vrnetlab
 from scrapli.driver.core import IOSXRDriver
 
 STARTUP_CONFIG_FILE = "/config/startup-config.cfg"
 DEFAULT_SCRAPLI_TIMEOUT = 900
+
 
 def handle_SIGCHLD(signal, frame):
     os.waitpid(-1, os.WNOHANG)
@@ -41,12 +41,21 @@ logging.Logger.trace = trace
 
 
 class XRv9k_vm(vrnetlab.VM):
-    def __init__(self, hostname, username, password, nics, conn_mode, vcpu, ram, install=False):
+    def __init__(
+        self, hostname, username, password, nics, conn_mode, vcpu, ram, install=False
+    ):
         disk_image = None
         for e in sorted(os.listdir("/")):
             if not disk_image and re.search(".qcow2", e):
                 disk_image = "/" + e
-        super(XRv9k_vm, self).__init__(username, password, disk_image=disk_image, ram=ram, smp=f"cores={vcpu},threads=1,sockets=1", use_scrapli=True)
+        super(XRv9k_vm, self).__init__(
+            username,
+            password,
+            disk_image=disk_image,
+            ram=ram,
+            smp=f"cores={vcpu},threads=1,sockets=1",
+            use_scrapli=True,
+        )
         self.hostname = hostname
         self.conn_mode = conn_mode
         self.num_nics = nics
@@ -70,9 +79,9 @@ class XRv9k_vm(vrnetlab.VM):
 
     def gen_mgmt(self):
         """Generate qemu args for the mgmt interface(s)"""
-        
+
         res = super().gen_mgmt()
-    
+
         # dummy interface for xrv9k ctrl interface
         res.extend(
             [
@@ -115,7 +124,7 @@ class XRv9k_vm(vrnetlab.VM):
                 b"XR partition preparation completed successfully",
             ],
         )
-        
+
         if match:  # got a match!
             if ridx == 0:  # press return to get started, so we press return!
                 self.logger.info("got 'press return to get started...'")
@@ -154,10 +163,11 @@ class XRv9k_vm(vrnetlab.VM):
         return
 
     def apply_config(self):
-        
         scrapli_timeout = os.getenv("SCRAPLI_TIMEOUT", DEFAULT_SCRAPLI_TIMEOUT)
-        self.logger.info(f"Scrapli timeout is {scrapli_timeout}s (default {DEFAULT_SCRAPLI_TIMEOUT}s)")
-        
+        self.logger.info(
+            f"Scrapli timeout is {scrapli_timeout}s (default {DEFAULT_SCRAPLI_TIMEOUT}s)"
+        )
+
         # init scrapli
         xrv9k_scrapli_dev = {
             "host": "127.0.0.1",
@@ -170,7 +180,7 @@ class XRv9k_vm(vrnetlab.VM):
             "timeout_transport": scrapli_timeout,
             "timeout_ops": scrapli_timeout,
         }
-                        
+
         xrv9k_config = f"""hostname {self.hostname}
 vrf clab-mgmt
 description Containerlab management VRF (DO NOT DELETE)
@@ -206,20 +216,20 @@ grpc no-tls
 xml agent tty
 root
 """
-        
+
         if os.path.exists(STARTUP_CONFIG_FILE):
             self.logger.info("Startup configuration file found")
             with open(STARTUP_CONFIG_FILE, "r") as config:
                 xrv9k_config += config.read()
         else:
             self.logger.warning(f"User provided startup configuration is not found.")
-        
+
         self.scrapli_tn.close()
-        
+
         with IOSXRDriver(**xrv9k_scrapli_dev) as con:
             res = con.send_configs(xrv9k_config.splitlines())
             res += con.send_configs(["commit best-effort label CLAB_BOOTSTRAP", "end"])
-    
+
             for response in res:
                 self.logger.info(f"CONFIG:{response.channel_input}")
                 self.logger.info(f"RESULT:{response.result}")
@@ -232,17 +242,22 @@ class XRv9k(vrnetlab.VR):
 
 
 class XRv9k_Installer(XRv9k):
-    """ XRv9k installer
-        Will start the XRv9k and then shut it down. Booting the XRv9k for the
-        first time requires the XRv9k itself to install internal packages
-        then it will restart. Subsequent boots will not require this restart.
-        By running this "install" when building the docker image we can
-        decrease the normal startup time of the XRv9k.
+    """XRv9k installer
+    Will start the XRv9k and then shut it down. Booting the XRv9k for the
+    first time requires the XRv9k itself to install internal packages
+    then it will restart. Subsequent boots will not require this restart.
+    By running this "install" when building the docker image we can
+    decrease the normal startup time of the XRv9k.
     """
+
     def __init__(self, hostname, username, password, nics, conn_mode, vcpu, ram):
         super(XRv9k, self).__init__(username, password)
-        self.vms = [XRv9k_vm(hostname, username, password, nics, conn_mode, vcpu, ram, install=True)]
-    
+        self.vms = [
+            XRv9k_vm(
+                hostname, username, password, nics, conn_mode, vcpu, ram, install=True
+            )
+        ]
+
     def install(self):
         self.logger.info("Installing XRv9k")
         xrv = self.vms[0]
@@ -262,7 +277,7 @@ if __name__ == "__main__":
     parser.add_argument("--username", default="vrnetlab", help="Username")
     parser.add_argument("--password", default="VR-netlab9", help="Password")
     parser.add_argument("--nics", type=int, default=128, help="Number of NICS")
-    parser.add_argument('--install', action="store_true", help="Pre-install image")
+    parser.add_argument("--install", action="store_true", help="Pre-install image")
     parser.add_argument(
         "--vcpu", type=int, default=4, help="Number of cpu cores to use"
     )

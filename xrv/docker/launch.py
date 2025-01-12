@@ -16,6 +16,7 @@ from scrapli.driver.core import IOSXRDriver
 STARTUP_CONFIG_FILE = "/config/startup-config.cfg"
 DEFAULT_SCRAPLI_TIMEOUT = 900
 
+
 def handle_SIGCHLD(signal, frame):
     os.waitpid(-1, os.WNOHANG)
 
@@ -47,7 +48,8 @@ class XRV_vm(vrnetlab.VM):
             if re.search(".vmdk", e):
                 disk_image = "/" + e
         super(XRV_vm, self).__init__(
-            username, password, disk_image=disk_image, ram=3072, use_scrapli=True)
+            username, password, disk_image=disk_image, ram=3072, use_scrapli=True
+        )
         self.hostname = hostname
         self.conn_mode = conn_mode
         self.num_nics = 128
@@ -97,9 +99,7 @@ class XRV_vm(vrnetlab.VM):
                 except IndexError as exc:
                     self.logger.error("no more credentials to try")
                     return
-                self.logger.info(
-                    "trying to log in with %s / %s" % (username, password)
-                )
+                self.logger.info("trying to log in with %s / %s" % (username, password))
                 self.wait_write(username, wait=None)
                 self.wait_write(password, wait="Password:")
             if self.xr_ready == True and ridx == 4:
@@ -125,11 +125,12 @@ class XRV_vm(vrnetlab.VM):
 
         return
 
-    def apply_config(self):  
-        
+    def apply_config(self):
         scrapli_timeout = os.getenv("SCRAPLI_TIMEOUT", DEFAULT_SCRAPLI_TIMEOUT)
-        self.logger.info(f"Scrapli timeout is {scrapli_timeout}s (default {DEFAULT_SCRAPLI_TIMEOUT}s)")
-        
+        self.logger.info(
+            f"Scrapli timeout is {scrapli_timeout}s (default {DEFAULT_SCRAPLI_TIMEOUT}s)"
+        )
+
         # init scrapli
         xrv_scrapli_dev = {
             "host": "127.0.0.1",
@@ -139,7 +140,7 @@ class XRV_vm(vrnetlab.VM):
             "timeout_transport": scrapli_timeout,
             "timeout_ops": scrapli_timeout,
         }
-                        
+
         xrv_config = f"""hostname {self.hostname}
 vrf clab-mgmt
 description Containerlab management VRF (DO NOT DELETE)
@@ -181,25 +182,29 @@ root
 
         con = IOSXRDriver(**xrv_scrapli_dev)
         con.commandeer(conn=self.scrapli_tn)
-        
+
         if os.path.exists(STARTUP_CONFIG_FILE):
             self.logger.info("Startup configuration file found")
             with open(STARTUP_CONFIG_FILE, "r") as config:
                 xrv_config += config.read()
         else:
             self.logger.warning(f"User provided startup configuration is not found.")
-                    
+
         # configure SSH keys
         con.send_interactive(
             [
-                ("crypto key generate rsa", "How many bits in the modulus [2048]", False),
+                (
+                    "crypto key generate rsa",
+                    "How many bits in the modulus [2048]",
+                    False,
+                ),
                 ("2048", "#", True),
             ]
         )
 
         res = con.send_configs(xrv_config.splitlines())
         res += con.send_configs(["commit best-effort label CLAB_BOOTSTRAP", "end"])
-    
+
         for response in res:
             self.logger.info(f"CONFIG:{response.channel_input}")
             self.logger.info(f"RESULT:{response.result}")

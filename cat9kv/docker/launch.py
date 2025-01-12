@@ -13,6 +13,7 @@ import vrnetlab
 STARTUP_CONFIG_FILE = "/config/startup-config.cfg"
 DEFAULT_SCRAPLI_TIMEOUT = 900
 
+
 def handle_SIGCHLD(signal, frame):
     os.waitpid(-1, os.WNOHANG)
 
@@ -52,7 +53,7 @@ class cat9kv_vm(vrnetlab.VM):
             smp=f"cores={vcpu},threads=1,sockets=1",
             ram=ram,
             min_dp_nics=8,
-            use_scrapli=True
+            use_scrapli=True,
         )
         self.hostname = hostname
         self.conn_mode = conn_mode
@@ -86,7 +87,7 @@ class cat9kv_vm(vrnetlab.VM):
             self.logger.debug("No vswitch.xml file provided.")
 
         v4_mgmt_address = vrnetlab.cidr_to_ddn(self.mgmt_address_ipv4)
-                
+
         cat9kv_config = f"""hostname {self.hostname}
 username {self.username} privilege 15 password {self.password}
 ip domain name example.com
@@ -123,7 +124,7 @@ ip ssh server algorithm mac hmac-sha2-512
 
         if os.path.exists(STARTUP_CONFIG_FILE):
             self.logger.info("Startup configuration file found")
-            with open (STARTUP_CONFIG_FILE, "r") as startup_config:
+            with open(STARTUP_CONFIG_FILE, "r") as startup_config:
                 cat9kv_config += startup_config.read()
         else:
             self.logger.warning(f"User provided startup configuration is not found.")
@@ -158,7 +159,7 @@ ip ssh server algorithm mac hmac-sha2-512
             ],
         )
         if match:  # got a match!
-            if ridx == 0:   # configuration applied
+            if ridx == 0:  # configuration applied
                 self.logger.info("CVAC Configuration has been applied.")
                 # close telnet connection
                 self.scrapli_tn.close()
@@ -181,6 +182,7 @@ ip ssh server algorithm mac hmac-sha2-512
         self.spins += 1
 
         return
+
 
 class cat9kv(vrnetlab.VR):
     def __init__(self, hostname, username, password, conn_mode, vcpu, ram):

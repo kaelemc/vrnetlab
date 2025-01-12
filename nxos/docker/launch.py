@@ -14,6 +14,7 @@ from scrapli.driver.core import NXOSDriver
 STARTUP_CONFIG_FILE = "/config/startup-config.cfg"
 DEFAULT_SCRAPLI_TIMEOUT = 900
 
+
 def handle_SIGCHLD(signal, frame):
     os.waitpid(-1, os.WNOHANG)
 
@@ -45,7 +46,12 @@ class NXOS_vm(vrnetlab.VM):
             if re.search(".qcow2$", e):
                 disk_image = "/" + e
         super(NXOS_vm, self).__init__(
-            username, password, disk_image=disk_image, ram=4096, smp="2", use_scrapli=True
+            username,
+            password,
+            disk_image=disk_image,
+            ram=4096,
+            smp="2",
+            use_scrapli=True,
         )
         self.credentials = [["admin", "admin"]]
         self.hostname = hostname
@@ -97,11 +103,12 @@ class NXOS_vm(vrnetlab.VM):
 
         return
 
-    def apply_config(self):  
-        
+    def apply_config(self):
         scrapli_timeout = os.getenv("SCRAPLI_TIMEOUT", DEFAULT_SCRAPLI_TIMEOUT)
-        self.logger.info(f"Scrapli timeout is {scrapli_timeout}s (default {DEFAULT_SCRAPLI_TIMEOUT}s)")
-        
+        self.logger.info(
+            f"Scrapli timeout is {scrapli_timeout}s (default {DEFAULT_SCRAPLI_TIMEOUT}s)"
+        )
+
         # init scrapli
         nxos_scrapli_dev = {
             "host": "127.0.0.1",
@@ -111,7 +118,7 @@ class NXOS_vm(vrnetlab.VM):
             "timeout_transport": scrapli_timeout,
             "timeout_ops": scrapli_timeout,
         }
-                        
+
         nxos_config = f"""hostname {self.hostname}
 username {self.username} password 0 {self.password} role network-admin
 !
@@ -133,7 +140,7 @@ feature ssh
 
         con = NXOSDriver(**nxos_scrapli_dev)
         con.commandeer(conn=self.scrapli_tn)
-        
+
         if os.path.exists(STARTUP_CONFIG_FILE):
             self.logger.info("Startup configuration file found")
             with open(STARTUP_CONFIG_FILE, "r") as config:
@@ -143,7 +150,7 @@ feature ssh
 
         res = con.send_configs(nxos_config.splitlines())
         con.send_config("copy running-config startup-config")
-    
+
         for response in res:
             self.logger.info(f"CONFIG:{response.channel_input}")
             self.logger.info(f"RESULT:{response.result}")

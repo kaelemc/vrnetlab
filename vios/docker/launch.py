@@ -12,6 +12,7 @@ from scrapli.driver.core import IOSXEDriver
 STARTUP_CONFIG_FILE = "/config/startup-config.cfg"
 DEFAULT_SCRAPLI_TIMEOUT = 900
 
+
 def handle_SIGCHLD(_signal, _frame):
     os.waitpid(-1, os.WNOHANG)
 
@@ -53,7 +54,7 @@ class VIOS_vm(vrnetlab.VM):
             smp="1",
             ram=512,
             driveif="virtio",
-            use_scrapli=True
+            use_scrapli=True,
         )
 
         self.hostname = hostname
@@ -108,12 +109,12 @@ class VIOS_vm(vrnetlab.VM):
         self.spins += 1
         return
 
-
-    def apply_config(self):  
-        
+    def apply_config(self):
         scrapli_timeout = os.getenv("SCRAPLI_TIMEOUT", DEFAULT_SCRAPLI_TIMEOUT)
-        self.logger.info(f"Scrapli timeout is {scrapli_timeout}s (default {DEFAULT_SCRAPLI_TIMEOUT}s)")
-        
+        self.logger.info(
+            f"Scrapli timeout is {scrapli_timeout}s (default {DEFAULT_SCRAPLI_TIMEOUT}s)"
+        )
+
         # init scrapli
         vios_scrapli_dev = {
             "host": "127.0.0.1",
@@ -123,9 +124,9 @@ class VIOS_vm(vrnetlab.VM):
             "timeout_transport": scrapli_timeout,
             "timeout_ops": scrapli_timeout,
         }
-        
+
         v4_mgmt_address = vrnetlab.cidr_to_ddn(self.mgmt_address_ipv4)
-                        
+
         vios_config = f"""hostname {self.hostname}
 username {self.username} privilege 15 password {self.password}
 ip domain-name example.com
@@ -177,7 +178,7 @@ no banner incoming
 
         con = IOSXEDriver(**vios_scrapli_dev)
         con.commandeer(conn=self.scrapli_tn)
-        
+
         if os.path.exists(STARTUP_CONFIG_FILE):
             self.logger.info("Startup configuration file found")
             with open(STARTUP_CONFIG_FILE, "r") as config:
@@ -187,7 +188,7 @@ no banner incoming
 
         res = con.send_configs(vios_config.splitlines())
         res += con.send_commands(["write memory"])
-    
+
         for response in res:
             self.logger.info(f"CONFIG:{response.channel_input}")
             self.logger.info(f"RESULT:{response.result}")

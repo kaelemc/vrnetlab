@@ -13,6 +13,7 @@ import vrnetlab
 STARTUP_CONFIG_FILE = "/config/startup-config.cfg"
 DEFAULT_SCRAPLI_TIMEOUT = 900
 
+
 def handle_SIGCHLD(signal, frame):
     os.waitpid(-1, os.WNOHANG)
 
@@ -52,7 +53,9 @@ class C8000v_vm(vrnetlab.VM):
             logger.info("License found")
             self.license = True
 
-        super().__init__(username, password, disk_image=disk_image, ram=4096, use_scrapli=True)
+        super().__init__(
+            username, password, disk_image=disk_image, ram=4096, use_scrapli=True
+        )
         self.install_mode = install_mode
         self.hostname = hostname
         self.conn_mode = conn_mode
@@ -67,10 +70,10 @@ class C8000v_vm(vrnetlab.VM):
             cfg = self.gen_bootstrap_config()
             if os.path.exists(STARTUP_CONFIG_FILE):
                 self.logger.info("Startup configuration file found")
-                with open (STARTUP_CONFIG_FILE, "r") as startup_config:
+                with open(STARTUP_CONFIG_FILE, "r") as startup_config:
                     cfg += startup_config.read()
             else:
-                self.logger.warning(f"User provided startup configuration is not found.")
+                self.logger.warning("User provided startup configuration is not found.")
             self.create_config_image(cfg)
 
         self.qemu_args.extend(["-cdrom", "/" + self.image_name])
@@ -79,9 +82,9 @@ class C8000v_vm(vrnetlab.VM):
         """
         Returns the configuration to load in install mode
         """
-        
+
         config = ""
-        
+
         if self.license:
             config += """do clock set 13:33:37 1 Jan 2010
 interface GigabitEthernet1
@@ -92,7 +95,7 @@ license accept end user agreement
 yes
 do license install tftp://10.0.0.2/license.lic
 """
-        
+
         config += """
 license boot level network-premier addon dna-premier
 platform console serial
@@ -107,9 +110,9 @@ do reload
         """
         Returns the system bootstrap configuration
         """
-        
+
         v4_mgmt_address = vrnetlab.cidr_to_ddn(self.mgmt_address_ipv4)
-                
+
         return f"""hostname {self.hostname}
 username {self.username} privilege 15 password {self.password}
 ip domain name example.com
@@ -168,7 +171,7 @@ ip ssh maxstartups 128
             "/" + self.image_name,
             "/iosxe_config.txt",
         ]
-        
+
         self.logger.debug("Generating boot ISO")
         subprocess.Popen(genisoimage_args).wait()
 
@@ -180,12 +183,12 @@ ip ssh maxstartups 128
             self.stop()
             self.start()
             return
-        
+
         (ridx, match, res) = self.con_expect(
             [b"CVAC-4-CONFIG_DONE", b"IOSXEBOOT-4-FACTORY_RESET"]
         )
         if match:  # got a match!
-            if ridx == 0 and not self.install_mode:   # configuration applied
+            if ridx == 0 and not self.install_mode:  # configuration applied
                 self.logger.info("CVAC Configuration has been applied.")
                 # close telnet connection
                 self.scrapli_tn.close()
@@ -214,6 +217,7 @@ ip ssh maxstartups 128
         self.spins += 1
 
         return
+
 
 class C8000v(vrnetlab.VR):
     def __init__(self, hostname, username, password, conn_mode):

@@ -14,6 +14,7 @@ from scrapli.driver.core import NXOSDriver
 STARTUP_CONFIG_FILE = "/config/startup-config.cfg"
 DEFAULT_SCRAPLI_TIMEOUT = 900
 
+
 def handle_SIGCHLD(signal, frame):
     os.waitpid(-1, os.WNOHANG)
 
@@ -49,8 +50,13 @@ class N9KV_vm(vrnetlab.VM):
             logging.getLogger().info("Disk image was not found")
             exit(1)
         super(N9KV_vm, self).__init__(
-            username, password, disk_image=disk_image, ram=10240,
-            smp=4, cpu="host,level=9", use_scrapli=True
+            username,
+            password,
+            disk_image=disk_image,
+            ram=10240,
+            smp=4,
+            cpu="host,level=9",
+            use_scrapli=True,
         )
         self.hostname = hostname
         self.conn_mode = conn_mode
@@ -67,10 +73,10 @@ class N9KV_vm(vrnetlab.VM):
         replace_index = self.qemu_args.index(
             "if=ide,file={}".format(overlay_disk_image)
         )
-        self.qemu_args[
-            replace_index
-        ] = "file={},if=none,id=drive-sata-disk0,format=qcow2".format(
-            overlay_disk_image
+        self.qemu_args[replace_index] = (
+            "file={},if=none,id=drive-sata-disk0,format=qcow2".format(
+                overlay_disk_image
+            )
         )
         self.qemu_args.extend(["-device", "ahci,id=ahci0,bus=pci.0"])
         self.qemu_args.extend(
@@ -80,7 +86,6 @@ class N9KV_vm(vrnetlab.VM):
             ]
         )
 
-
     def bootstrap_spin(self):
         """This function should be called periodically to do work."""
         if self.spins > 300:
@@ -89,7 +94,14 @@ class N9KV_vm(vrnetlab.VM):
             self.start()
             return
 
-        (ridx, match, res) = self.con_expect([b"\(yes\/skip\/no\)\[no\]:",b"\(yes\/no\)\[n\]:", b"\(yes\/no\)\[no\]:", b"login:"])
+        (ridx, match, res) = self.con_expect(
+            [
+                b"\(yes\/skip\/no\)\[no\]:",
+                b"\(yes\/no\)\[n\]:",
+                b"\(yes\/no\)\[no\]:",
+                b"login:",
+            ]
+        )
         if match:  # got a match!
             if ridx in (0, 1, 2):
                 self.logger.debug("matched poap prompt")
@@ -130,11 +142,12 @@ class N9KV_vm(vrnetlab.VM):
 
         return
 
-    def apply_config(self):  
-        
+    def apply_config(self):
         scrapli_timeout = os.getenv("SCRAPLI_TIMEOUT", DEFAULT_SCRAPLI_TIMEOUT)
-        self.logger.info(f"Scrapli timeout is {scrapli_timeout}s (default {DEFAULT_SCRAPLI_TIMEOUT}s)")
-        
+        self.logger.info(
+            f"Scrapli timeout is {scrapli_timeout}s (default {DEFAULT_SCRAPLI_TIMEOUT}s)"
+        )
+
         # init scrapli
         n9kv_scrapli_dev = {
             "host": "127.0.0.1",
@@ -144,7 +157,7 @@ class N9KV_vm(vrnetlab.VM):
             "timeout_transport": scrapli_timeout,
             "timeout_ops": scrapli_timeout,
         }
-                        
+
         n9kv_config = f"""hostname {self.hostname}
 username {self.username} password 0 {self.password} role network-admin
 !
@@ -171,7 +184,7 @@ feature grpc
 
         con = NXOSDriver(**n9kv_scrapli_dev)
         con.commandeer(conn=self.scrapli_tn)
-        
+
         if os.path.exists(STARTUP_CONFIG_FILE):
             self.logger.info("Startup configuration file found")
             with open(STARTUP_CONFIG_FILE, "r") as config:
@@ -181,7 +194,7 @@ feature grpc
 
         res = con.send_configs(n9kv_config.splitlines())
         con.send_config("copy running-config startup-config")
-    
+
         for response in res:
             self.logger.info(f"CONFIG:{response.channel_input}")
             self.logger.info(f"RESULT:{response.result}")
