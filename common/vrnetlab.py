@@ -120,7 +120,7 @@ class VM:
 
         # configure scrapli
         if self.use_scrapli:
-            # init scrapli -- main telnet device
+            # init scrapli_tn -- main telnet device
             scrapli_tn_dev = {
                 "host": "127.0.0.1",
                 "port": 5000 + num,
@@ -134,7 +134,7 @@ class VM:
 
             self.scrapli_tn = Driver(**scrapli_tn_dev)
 
-            # init scrapli -- qemu monitor device
+            # init scrapli_qm_dev -- qemu monitor device
             scrapli_qm_dev = {
                 "host": "127.0.0.1",
                 "port": 4000 + num,

@@ -1318,6 +1318,9 @@ class SROS_vm(vrnetlab.VM):
 
             self.switchConfigEngine()
 
+            # close scrapli device driver
+            self.sros_con.close()
+
     @property
     def ram(self):
         """Ignore environment variables here, since getMem function is used"""
