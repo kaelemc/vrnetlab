@@ -221,7 +221,7 @@ root
             with open(STARTUP_CONFIG_FILE, "r") as config:
                 xrv9k_config += config.read()
         else:
-            self.logger.warning(f"User provided startup configuration is not found.")
+            self.logger.warning("User provided startup configuration is not found.")
 
         self.scrapli_tn.close()
 

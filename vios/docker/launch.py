@@ -89,8 +89,6 @@ class VIOS_vm(vrnetlab.VM):
             elif ridx == 2:
                 self.apply_config()
 
-                # close telnet connection
-                self.scrapli_tn.close()
                 # startup time
                 startup_time = datetime.datetime.now() - self.start_time
                 self.logger.info(f"Startup complete in: {startup_time}")
@@ -109,9 +107,9 @@ class VIOS_vm(vrnetlab.VM):
         return
 
     def apply_config(self):
-        scrapli_timeout = os.getenv("SCRAPLI_TIMEOUT", DEFAULT_SCRAPLI_TIMEOUT)
+        scrapli_timeout = os.getenv("SCRAPLI_TIMEOUT", vrnetlab.DEFAULT_SCRAPLI_TIMEOUT)
         self.logger.info(
-            f"Scrapli timeout is {scrapli_timeout}s (default {DEFAULT_SCRAPLI_TIMEOUT}s)"
+            f"Scrapli timeout is {scrapli_timeout}s (default {vrnetlab.DEFAULT_SCRAPLI_TIMEOUT}s)"
         )
 
         # init scrapli
@@ -183,7 +181,7 @@ no banner incoming
             with open(STARTUP_CONFIG_FILE, "r") as config:
                 vios_config += config.read()
         else:
-            self.logger.warning(f"User provided startup configuration is not found.")
+            self.logger.warning("User provided startup configuration is not found.")
 
         res = con.send_configs(vios_config.splitlines())
         res += con.send_commands(["write memory"])
@@ -191,6 +189,9 @@ no banner incoming
         for response in res:
             self.logger.info(f"CONFIG:{response.channel_input}")
             self.logger.info(f"RESULT:{response.result}")
+
+        # close the scrapli connection
+        con.close()
 
 
 class VIOS(vrnetlab.VR):

@@ -82,8 +82,7 @@ class NXOS_vm(vrnetlab.VM):
 
                 # run main config!
                 self.apply_config()
-                # close telnet connection
-                self.scrapli_tn.close()
+
                 # startup time?
                 startup_time = datetime.datetime.now() - self.start_time
                 self.logger.info("Startup complete in: %s" % startup_time)
@@ -145,7 +144,7 @@ feature ssh
             with open(STARTUP_CONFIG_FILE, "r") as config:
                 nxos_config += config.read()
         else:
-            self.logger.warning(f"User provided startup configuration is not found.")
+            self.logger.warning("User provided startup configuration is not found.")
 
         res = con.send_configs(nxos_config.splitlines())
         con.send_config("copy running-config startup-config")
@@ -153,6 +152,8 @@ feature ssh
         for response in res:
             self.logger.info(f"CONFIG:{response.channel_input}")
             self.logger.info(f"RESULT:{response.result}")
+
+        con.close()
 
 
 class NXOS(vrnetlab.VR):

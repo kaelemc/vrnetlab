@@ -3,11 +3,9 @@
 import datetime
 import logging
 import os
-import random
 import re
 import signal
 import sys
-import telnetlib
 import time
 
 import vrnetlab
@@ -95,17 +93,15 @@ class XRV_vm(vrnetlab.VM):
                 self.logger.info("matched login prompt")
                 try:
                     username, password = self.credentials.pop(0)
-                except IndexError as exc:
+                except IndexError:
                     self.logger.error("no more credentials to try")
                     return
                 self.logger.info("trying to log in with %s / %s" % (username, password))
                 self.wait_write(username, wait=None)
                 self.wait_write(password, wait="Password:")
-            if self.xr_ready == True and ridx == 4:
+            if self.xr_ready and ridx == 4:
                 # run main config!
                 self.apply_config()
-                # close telnet connection
-                self.scrapli_tn.close()
                 # startup time?
                 startup_time = datetime.datetime.now() - self.start_time
                 self.logger.info("Startup complete in: %s" % startup_time)
@@ -187,7 +183,7 @@ root
             with open(STARTUP_CONFIG_FILE, "r") as config:
                 xrv_config += config.read()
         else:
-            self.logger.warning(f"User provided startup configuration is not found.")
+            self.logger.warning("User provided startup configuration is not found.")
 
         # configure SSH keys
         con.send_interactive(
@@ -207,6 +203,8 @@ root
         for response in res:
             self.logger.info(f"CONFIG:{response.channel_input}")
             self.logger.info(f"RESULT:{response.result}")
+
+        con.close()
 
 
 class XRV(vrnetlab.VR):

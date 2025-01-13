@@ -53,7 +53,7 @@ class N9KV_vm(vrnetlab.VM):
             disk_image=disk_image,
             ram=10240,
             smp=4,
-            cpu="host,level=9",
+            cpu="host",
             use_scrapli=True,
         )
         self.hostname = hostname
@@ -120,8 +120,7 @@ class N9KV_vm(vrnetlab.VM):
 
                 # run main config!
                 self.apply_config()
-                # close telnet connection
-                self.scrapli_tn.close()
+
                 # startup time?
                 startup_time = datetime.datetime.now() - self.start_time
                 self.logger.info("Startup complete in: %s" % startup_time)
@@ -188,7 +187,7 @@ feature grpc
             with open(STARTUP_CONFIG_FILE, "r") as config:
                 n9kv_config += config.read()
         else:
-            self.logger.warning(f"User provided startup configuration is not found.")
+            self.logger.warning("User provided startup configuration is not found.")
 
         res = con.send_configs(n9kv_config.splitlines())
         con.send_config("copy running-config startup-config")
@@ -196,6 +195,8 @@ feature grpc
         for response in res:
             self.logger.info(f"CONFIG:{response.channel_input}")
             self.logger.info(f"RESULT:{response.result}")
+
+        con.close()
 
 
 class N9KV(vrnetlab.VR):
