@@ -362,7 +362,7 @@ class VM:
                     self.qm = telnetlib.Telnet("127.0.0.1", 4000 + self.num)
                 break
             except:
-                self.logger.info(
+                self.logger.error(
                     "Unable to connect to qemu monitor (port {}), retrying in a second (attempt {})".format(
                         4000 + self.num, i
                     )
@@ -383,7 +383,7 @@ class VM:
                     self.tn = telnetlib.Telnet("127.0.0.1", 5000 + self.num)
                 break
             except:
-                self.logger.info(
+                self.logger.error(
                     "Unable to connect to qemu monitor (port {}), retrying in a second (attempt {})".format(
                         5000 + self.num, i
                     )
