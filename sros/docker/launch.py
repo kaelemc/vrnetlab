@@ -1290,8 +1290,6 @@ class SROS_vm(vrnetlab.VM):
         self.log_scrapli_cmd_res(res)
 
         self.commitBofConfig()
-        # save bof config on disk
-        self.persistBofAndConfig()
 
         # apply common configuration if config file was not provided
         if not config_exists:
@@ -1317,8 +1315,10 @@ class SROS_vm(vrnetlab.VM):
 
             self.switchConfigEngine()
 
-            # close scrapli device driver
-            self.sros_con.close()
+        self.persistBofAndConfig()
+
+        # close scrapli device driver
+        self.sros_con.close()
 
     @property
     def ram(self):
