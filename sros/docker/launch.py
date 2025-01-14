@@ -1090,7 +1090,7 @@ class SROS_vm(vrnetlab.VM):
         # power_path sets the configuration path to access power shelf and module
         # it is different for SR OS version <= 22
         power_path = "chassis router chassis-number 1"
-        if SROS_VERSION.major <= 22 or SROS_VERSION.magc:
+        if classic_cfg:
             power_path = "system"
 
         for s in range(1, shelves + 1):
@@ -1111,14 +1111,14 @@ class SROS_vm(vrnetlab.VM):
                 self.log_scrapli_cmd_res(res)
 
     def enterConfig(self):
-        """Enter configuration mode. No-op for SR OS version <= 22"""
-        if SROS_VERSION.major <= 22 or SROS_VERSION.magc:
+        """Enter configuration mode. No-op for SR OS version <= 22 (classic CLI)"""
+        if classic_cfg:
             return
         self.sros_con.acquire_priv("configuration")
 
     def enterBofConfig(self):
-        """Enter bof configuration mode. No-op for SR OS version <= 22"""
-        if SROS_VERSION.major <= 22 or SROS_VERSION.magc:
+        """Enter bof configuration mode. No-op for SR OS version <= 22 (classic CLI)"""
+        if classic_cfg:
             return
         res = self.sros_con.send_commands(
             ["edit-config bof exclusive"], strip_prompt=False
@@ -1126,15 +1126,15 @@ class SROS_vm(vrnetlab.VM):
         self.log_scrapli_cmd_res(res)
 
     def commitConfig(self):
-        """Commit configuration. No-op for SR OS version <= 22"""
-        if SROS_VERSION.major <= 22 or SROS_VERSION.magc:
+        """Commit configuration. No-op for SR OS version <= 22 (classic CLI)"""
+        if classic_cfg:
             return
         res = self.sros_con.send_configs(["commit", "/"], strip_prompt=False)
         self.log_scrapli_cmd_res(res)
 
     def commitBofConfig(self):
-        """Commit configuration. No-op for SR OS version <= 22"""
-        if SROS_VERSION.major <= 22 or SROS_VERSION.magc:
+        """Commit configuration. No-op for SR OS version <= 22 (classic CLI)"""
+        if classic_cfg:
             return
         res = self.sros_con.send_configs(["commit", "/"], strip_prompt=False)
         self.log_scrapli_cmd_res(res)
@@ -1160,7 +1160,7 @@ class SROS_vm(vrnetlab.VM):
         """ "Persist bof and config"""
         if SROS_VERSION.magc:
             cmds = ["/bof save cf3:"]
-        elif SROS_VERSION.major <= 22:
+        elif classic_cfg:
             cmds = ["/bof save"]
         else:
             cmds = ["/admin save bof"]
@@ -1171,7 +1171,7 @@ class SROS_vm(vrnetlab.VM):
 
     def switchConfigEngine(self):
         """Switch configuration engine"""
-        if SROS_VERSION.major <= 22 or SROS_VERSION.magc:
+        if classic_cfg:
             # for SR OS version <= 22, we enforce MD-CLI by switching to it
             res = self.sros_con.send_configs(
                 [
@@ -1187,7 +1187,7 @@ class SROS_vm(vrnetlab.VM):
         if "DOCKER_NET_V4_ADDR" in os.environ and os.getenv("DOCKER_NET_V4_ADDR") != "":
             if self.mgmt_passthrough:
                 # in pass-trough mode we configure static routes for the IPv4 private space
-                if SROS_VERSION.major >= 23 and not SROS_VERSION.magc:
+                if SROS_VERSION.major >= 23 and not classic_cfg:
                     cmds.append(
                         f"/bof router static-routes route 100.64.0.0/10 next-hop {self.mgmt_gw_ipv4}"
                     )
@@ -1214,7 +1214,7 @@ class SROS_vm(vrnetlab.VM):
                         f"/bof static-route 192.168.0.0/16 next-hop {self.mgmt_gw_ipv4}"
                     )
             else:
-                if SROS_VERSION.major >= 23 and not SROS_VERSION.magc:
+                if SROS_VERSION.major >= 23 and not classic_cfg:
                     cmds.append(
                         f"/bof router static-routes route {os.getenv('DOCKER_NET_V4_ADDR')} next-hop {BRIDGE_V4_ADDR}"
                     )
@@ -1224,7 +1224,7 @@ class SROS_vm(vrnetlab.VM):
                     )
         if "DOCKER_NET_V6_ADDR" in os.environ and os.getenv("DOCKER_NET_V6_ADDR") != "":
             if not self.mgmt_passthrough:
-                if SROS_VERSION.major >= 23 and not SROS_VERSION.magc:
+                if SROS_VERSION.major >= 23 and not classic_cfg:
                     cmds.append(
                         f"/bof router static-routes route {os.getenv('DOCKER_NET_V6_ADDR')} next-hop {BRIDGE_V6_ADDR}"
                     )
@@ -1274,17 +1274,23 @@ class SROS_vm(vrnetlab.VM):
             "timeout_transport": scrapli_timeout,
             "timeout_ops": scrapli_timeout,
         }
+        
+        # SROS <= 22 use classic configuration mode by defaults
+        # other functions rely on this variable to determine what cmds to send
+        global classic_cfg 
+        classic_cfg = True if SROS_VERSION.major <= 22 or SROS_VERSION.magc else False
 
-        if SROS_VERSION.major <= 22 or SROS_VERSION.magc:
-            sros_scrapli_dev["variant"] = "classic"
-        elif config_exists:
+        if config_exists:
             with open("/tftpboot/config.txt") as startup_cfg:
                 for line in startup_cfg:
                     l_clean = line.strip()
                     if "configure" == l_clean and "{" not in l_clean:
                         self.logger.debug("Detected classic startup configuration")
-                        sros_scrapli_dev["variant"] = "classic"
+                        classic_cfg = True
                         break
+
+        if classic_cfg:
+            sros_scrapli_dev["variant"] = "classic"
 
         self.sros_con = Scrapli(**sros_scrapli_dev)
         self.sros_con.commandeer(conn=self.scrapli_tn)
@@ -1297,6 +1303,8 @@ class SROS_vm(vrnetlab.VM):
         self.log_scrapli_cmd_res(res)
 
         self.commitBofConfig()
+        
+        self.persistBofAndConfig()
 
         # apply common configuration if config file was not provided
         if not config_exists:
@@ -1321,8 +1329,6 @@ class SROS_vm(vrnetlab.VM):
             self.commitConfig()
 
             self.switchConfigEngine()
-
-        self.persistBofAndConfig()
 
         # close scrapli device driver
         self.sros_con.close()
@@ -1805,7 +1811,7 @@ def getDefaultConfig() -> str:
     """Returns the default configuration for the system based on the SR OS version.
     SR OS >=23 uses model-driven configuration, while SR OS <=22 uses classic configuration.
     """
-    if SROS_VERSION.major <= 22 or SROS_VERSION.magc:
+    if classic_cfg:
         return SROS_CL_COMMON_CFG + get_version_specific_config(SROS_VERSION.major)
 
     return SROS_MD_COMMON_CFG + get_version_specific_config(SROS_VERSION.major)
@@ -1934,7 +1940,7 @@ if __name__ == "__main__":
         # configure a temporary ip address so the tftp server can start.
         # modified later in the startup process in the create_tc_tap_mgmt_ifup function
         vrnetlab.run_command(
-            f"ip netns exec fakehost ip addr add 169.254.254.254/16 dev FA".split()
+            "ip netns exec fakehost ip addr add 169.254.254.254/16 dev FA".split()
         )
         # block arp responses in fakehost namespace so it doesn't interfere with root namespace
         vrnetlab.run_command(
