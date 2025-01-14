@@ -1277,8 +1277,15 @@ class SROS_vm(vrnetlab.VM):
 
         if SROS_VERSION.major <= 22 or SROS_VERSION.magc:
             sros_scrapli_dev["variant"] = "classic"
+        elif config_exists:
+            with open("/tftpboot/config.txt") as startup_cfg:
+                for line in startup_cfg:
+                    l_clean = line.strip()
+                    if "configure" == l_clean and "{" not in l_clean:
+                        self.logger.debug("Detected classic startup configuration")
+                        sros_scrapli_dev["variant"] = "classic"
+                        break
 
-        # self.scrapli_logger.setLevel(logging.DEBUG)
         self.sros_con = Scrapli(**sros_scrapli_dev)
         self.sros_con.commandeer(conn=self.scrapli_tn)
 
