@@ -1129,14 +1129,14 @@ class SROS_vm(vrnetlab.VM):
         """Commit configuration. No-op for SR OS version <= 22 (classic CLI)"""
         if classic_cfg:
             return
-        res = self.sros_con.send_configs(["commit", "/"], strip_prompt=False)
+        res = self.sros_con.send_configs(["commit", "quit-config"], strip_prompt=False)
         self.log_scrapli_cmd_res(res)
 
     def commitBofConfig(self):
         """Commit configuration. No-op for SR OS version <= 22 (classic CLI)"""
         if classic_cfg:
             return
-        res = self.sros_con.send_configs(["commit", "/"], strip_prompt=False)
+        res = self.sros_con.send_configs(["commit", "quit-config"], strip_prompt=False)
         self.log_scrapli_cmd_res(res)
 
     def configureCards(self):
@@ -1274,10 +1274,10 @@ class SROS_vm(vrnetlab.VM):
             "timeout_transport": scrapli_timeout,
             "timeout_ops": scrapli_timeout,
         }
-        
+
         # SROS <= 22 use classic configuration mode by defaults
         # other functions rely on this variable to determine what cmds to send
-        global classic_cfg 
+        global classic_cfg
         classic_cfg = True if SROS_VERSION.major <= 22 or SROS_VERSION.magc else False
 
         if config_exists:
@@ -1303,8 +1303,6 @@ class SROS_vm(vrnetlab.VM):
         self.log_scrapli_cmd_res(res)
 
         self.commitBofConfig()
-        
-        self.persistBofAndConfig()
 
         # apply common configuration if config file was not provided
         if not config_exists:
@@ -1327,6 +1325,8 @@ class SROS_vm(vrnetlab.VM):
                 self.configure_power(self.variant["power"])
 
             self.commitConfig()
+
+            self.persistBofAndConfig()
 
             self.switchConfigEngine()
 
