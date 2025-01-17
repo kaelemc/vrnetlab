@@ -1171,8 +1171,8 @@ class SROS_vm(vrnetlab.VM):
 
     def switchConfigEngine(self):
         """Switch configuration engine"""
-        if classic_cfg:
-            # for SR OS version <= 22, we enforce MD-CLI by switching to it
+        if (SROS_VERSION.major >= 19 and SROS_VERSION.major <= 22) or SROS_VERSION.magc:
+            # for SR OS versions 19-22 inclusive, we enforce MD-CLI by switching to it
             res = self.sros_con.send_configs(
                 [
                     f"/configure system management-interface configuration-mode {self.mode}"
