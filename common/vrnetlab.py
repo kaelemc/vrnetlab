@@ -104,6 +104,7 @@ class VM:
         cpu="host",
         smp="1",
         mgmt_passthrough=False,
+        mgmt_dhcp=False,
         min_dp_nics=0,
         use_scrapli=False,
     ):
@@ -182,15 +183,31 @@ class VM:
         # which **does not** match the eth0 interface of a container.
         # In pass-through mode the VM container uses the same IP as the container's eth0 interface and transparently forwards traffic between the two interfaces.
         # See https://github.com/hellt/vrnetlab/issues/286
-        self.mgmt_passthrough = mgmt_passthrough
-        mgmt_passthrough_override = os.environ.get("CLAB_MGMT_PASSTHROUGH", "")
-        if mgmt_passthrough_override:
-            self.mgmt_passthrough = mgmt_passthrough_override.lower() == "true"
+        self.mgmt_passthrough = (
+            os.environ.get("CLAB_MGMT_PASSTHROUGH", "").lower() == "true"
+            if os.environ.get("CLAB_MGMT_PASSTHROUGH")
+            else mgmt_passthrough
+        )
+
+        # Check if CLAB_MGMT_DHCP environment variable is set
+        self.mgmt_dhcp = (
+            os.environ.get("CLAB_MGMT_DHCP", "").lower() == "true"
+            if os.environ.get("CLAB_MGMT_DHCP")
+            else mgmt_dhcp
+        )
 
         # Populate management IP and gateway
+        # If CLAB_MGMT_DHCP environment variable is set, we assume that a DHCP client
+        # inside of the VM will take care about setting the management IP and gateway.
         if self.mgmt_passthrough:
-            self.mgmt_address_ipv4, self.mgmt_address_ipv6 = self.get_mgmt_address()
-            self.mgmt_gw_ipv4, self.mgmt_gw_ipv6 = self.get_mgmt_gw()
+            if self.mgmt_dhcp:
+                self.mgmt_address_ipv4 = "dhcp"
+                self.mgmt_address_ipv6 = "dhcp"
+                self.mgmt_gw_ipv4 = "dhcp"
+                self.mgmt_gw_ipv6 = "dhcp"
+            else:
+                self.mgmt_address_ipv4, self.mgmt_address_ipv6 = self.get_mgmt_address()
+                self.mgmt_gw_ipv4, self.mgmt_gw_ipv6 = self.get_mgmt_gw()
         else:
             self.mgmt_address_ipv4 = "10.0.0.15/24"
             self.mgmt_address_ipv6 = "2001:db8::2/64"
@@ -458,6 +475,12 @@ class VM:
             f.write(ifup_script)
         os.chmod("/etc/tc-tap-mgmt-ifup", 0o777)
 
+    def get_mgmt_mac(self, last_octet=0) -> str:
+        """Get the MAC address for the management interface from the envvar
+        `CLAB_MGMT_MAC` or generate a random one using `gen_mac(last_octet)`.
+        """
+        return os.environ.get("CLAB_MGMT_MAC") or gen_mac(last_octet)
+
     def gen_mgmt(self):
         """Generate qemu args for the mgmt interface(s)
 
@@ -485,11 +508,7 @@ class VM:
 
         res = []
         res.append("-device")
-        self.mgmt_mac = (
-            "c0:00:01:00:ca:fe"
-            if getattr(self, "_static_mgmt_mac", False)
-            else gen_mac(0)
-        )
+        self.mgmt_mac = self.get_mgmt_mac()
 
         res.append(self.nic_type + f",netdev=p00,mac={self.mgmt_mac}")
         res.append("-netdev")
