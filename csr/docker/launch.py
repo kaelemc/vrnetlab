@@ -216,6 +216,10 @@ netconf-yang
     def get_mgmt_mac(self):
         return "c0:00:01:00:ca:fe"
 
+    # Override management MAC with specific static MAC address
+    def get_mgmt_mac(self):
+        return "c0:00:01:00:ca:fe"
+
 
 class CSR(vrnetlab.VR):
     def __init__(self, hostname, username, password, nics, conn_mode):
