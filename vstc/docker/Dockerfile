@@ -5,6 +5,3 @@ ENV VERSION=${VERSION}
 ARG IMAGE
 COPY $IMAGE* /
 COPY *.py /
-
-HEALTHCHECK CMD ["/healthcheck.py"]
-ENTRYPOINT ["/launch.py"]
