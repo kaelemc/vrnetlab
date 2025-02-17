@@ -18,17 +18,16 @@ Interface naming follows `ethX` naming convention, with `eth0` reserved for the 
 name: vstc_lab
 topology:
   nodes:
-		# example DUT
-		r1:
-			kind: nokia_sros
-			image: vrnetlab/nokia_sros:24.10.R1
-		# STC traffic generator
-		vstc:
-			kind: generic_vm
-			image: vrnetlab/spirent_vstc:5.55.3216
+    # example DUT
+    r1:
+      kind: nokia_sros
+      image: vrnetlab/nokia_sros:24.10.R1
+    # STC traffic generator
+    vstc:
+      kind: generic_vm
+      image: vrnetlab/spirent_vstc:5.55.3216
 
-	links:
-		- endpoints: ["vstc:eth1","r1:1/1/1"]
-		- endpoints: ["vstc:eth2","r1:1/1/2"]
+  links:
+    - endpoints: ["vstc:eth1","r1:1/1/1"]
+    - endpoints: ["vstc:eth2","r1:1/1/2"]
 ```
-    
