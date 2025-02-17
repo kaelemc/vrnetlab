@@ -5,9 +5,7 @@ import logging
 import os
 import re
 import signal
-import subprocess
 import sys
-from time import sleep
 
 import vrnetlab
 
@@ -37,21 +35,20 @@ logging.Logger.trace = trace
 
 
 class STC_vm(vrnetlab.VM):
-    def __init__(self, hostname, username, password, nics, conn_mode, install_mode=False):
+    def __init__(self, hostname, username, password):
         for e in os.listdir("/"):
             if re.search(".qcow2$", e):
                 disk_image = "/" + e
 
-        self._static_mgmt_mac = True
-
         super(STC_vm, self).__init__(
-            username, password, disk_image=disk_image, use_scrapli=True
+            username, password, disk_image=disk_image, use_scrapli=True, min_dp_nics=1
         )
 
-        self.num_nics = nics
         self.hostname = hostname
-        self.conn_mode = conn_mode
+        self.num_nics = 9
         self.nic_type = "virtio-net-pci"
+        self.conn_mode = "tc"
+        self.wait_pattern = ">>"
 
     def bootstrap_spin(self):
         """This function should be called periodically to do work."""
@@ -62,43 +59,54 @@ class STC_vm(vrnetlab.VM):
             self.start()
             return
 
-        self.write_to_stdout(self.scrapli_tn.channel.read())
-        # (ridx, match, res) = self.con_expect(
-        #     [b"CVAC-4-CONFIG_DONE", b"Press RETURN to get started!"]
-        # )
-        # if match:  # got a match!
-        #     if ridx == 0 and not self.install_mode:  # configuration applied
-        #         self.logger.info("CVAC Configuration has been applied.")
-        #         # close telnet connection
-        #         self.scrapli_tn.close()
-        #         # startup time?
-        #         startup_time = datetime.datetime.now() - self.start_time
-        #         self.logger.info("Startup complete in: %s", startup_time)
-        #         # mark as running
-        #         self.running = True
-        #         return
-        #     elif ridx == 1:  # IOSXEBOOT-4-FACTORY_RESET
-        #         if self.install_mode:
-        #             install_time = datetime.datetime.now() - self.start_time
-        #             self.logger.info("Install complete in: %s", install_time)
-        #             self.running = True
-        #             return
-
-        # # no match, if we saw some output from the router it's probably
-        # # booting, so let's give it some more time
-        # if res != b"":
-        #     self.write_to_stdout(res)
-        #     # reset spins if we saw some output
-        #     self.spins = 0
-
-        # self.spins += 1
-
+        (ridx, match, res) = self.con_expect(
+            [b"login:"]
+        )
+        if match:
+            self.bootstrap_config()
+            
+            self.scrapli_tn.close()
+            # startup time?
+            startup_time = datetime.datetime.now() - self.start_time
+            self.logger.info("Startup complete in: %s", startup_time)
+            # mark as running
+            self.running = True
+            return
+        elif res:
+            self.write_to_stdout(res)
+            
         return
+    
+    def bootstrap_config(self):        
+        # login
+        self.wait_write("admin", "")
+        self.wait_write("spt_admin", "Password:")
+        
+        v4_mgmt_address = vrnetlab.cidr_to_ddn(self.mgmt_address_ipv4)
+        v6_mgmt_address = self.mgmt_address_ipv6.split("/")
+        
+        # configure
+        self.wait_write("mode static")
+        self.wait_write("ipv6mode static")
+        
+        self.wait_write(f"ipaddress {v4_mgmt_address[0]}")
+        self.wait_write(f"netmask {v4_mgmt_address[1]}")
+        self.wait_write(f"gwaddress {self.mgmt_gw_ipv4}")
+        
+        self.wait_write(f"ipv6address {v6_mgmt_address[0]}")
+        self.wait_write(f"ipv6prefixlen {v6_mgmt_address[1]}")
+        self.wait_write(f"ipv6gwaddress {self.mgmt_gw_ipv6}")
+        
+        self.wait_write("activate")
+        self.wait_write("reboot")
+        
+        self.con_read_until("login:")
 
+        
 class STC(vrnetlab.VR):
-    def __init__(self, hostname, username, password, nics, conn_mode):
+    def __init__(self, hostname, username, password):
         super(STC, self).__init__(username, password)
-        self.vms = [STC_vm(hostname, username, password, nics, conn_mode)]
+        self.vms = [STC_vm(hostname, username, password)]
 
 
 if __name__ == "__main__":
@@ -111,12 +119,7 @@ if __name__ == "__main__":
     parser.add_argument("--username", default="admin", help="Username")
     parser.add_argument("--password", default="spt_admin", help="Password")
     parser.add_argument("--hostname", default="stc", help="Hostname")
-    parser.add_argument("--nics", type=int, default=31, help="Number of NICS")
-    parser.add_argument(
-        "--connection-mode",
-        default="vrxcon",
-        help="Connection mode to use in the datapath",
-    )
+    
     args = parser.parse_args()
 
     LOG_FORMAT = "%(asctime)s: %(module)-10s %(levelname)-8s %(message)s"
@@ -131,7 +134,5 @@ if __name__ == "__main__":
         args.hostname,
         args.username,
         args.password,
-        args.nics,
-        args.connection_mode,
     )
     vr.start()
