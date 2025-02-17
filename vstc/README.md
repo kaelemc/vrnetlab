@@ -10,7 +10,7 @@ Please wait for the 'Startup Completed' message in the `docker logs` output befo
 
 ## Example
 
-You should use the Spirent vSTC with the `linux` kind in your topology definition.
+You should use the Spirent vSTC with the `generic_vm` kind in your topology definition.
 
 Interface naming follows `ethX` naming convention, with `eth0` reserved for the clab management network.
 
@@ -18,11 +18,13 @@ Interface naming follows `ethX` naming convention, with `eth0` reserved for the 
 name: vstc_lab
 topology:
   nodes:
+		# example DUT
 		r1:
 			kind: nokia_sros
 			image: vrnetlab/nokia_sros:24.10.R1
+		# STC traffic generator
 		vstc:
-			kind: linux
+			kind: generic_vm
 			image: vrnetlab/spirent_vstc:5.55.3216
 
 	links:

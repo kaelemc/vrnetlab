@@ -119,6 +119,7 @@ if __name__ == "__main__":
     parser.add_argument("--username", default="admin", help="Username")
     parser.add_argument("--password", default="spt_admin", help="Password")
     parser.add_argument("--hostname", default="stc", help="Hostname")
+    parser.add_argument("--connection-mode", default="tc", help="Ignored, does nothing")
     
     args = parser.parse_args()
 
